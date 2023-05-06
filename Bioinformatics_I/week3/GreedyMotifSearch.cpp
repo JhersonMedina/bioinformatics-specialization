@@ -43,9 +43,9 @@ vector < vector <double>> formProfile(vector <string>& motifs) {
 
 	return profile;
 }
-string find(string& s, vector <vector<double>>& profile) {
-	string kmer = "";
-	double best = -1.0;
+string mostProbableKmer(string& s, vector <vector<double>>& profile) {
+	string kmer = s.substr(0, k);
+	double best = 0.0;
 
 	for (int i = 0; i + k - 1 < s.size(); i++) {
 		double cur = 1.0;
@@ -86,14 +86,15 @@ int main() {
 	}
 
 	for (int i = 0; i + k - 1 < patterns[0].size(); i++) {
-		vector <string> currentMotifs = bestMotifs;
-		currentMotifs[0] = patterns[0].substr(i, k);
+		vector <string> currentMotifs = {patterns[0].substr(i, k)};
+
 		for (int j = 1; j < t; j++) {
 			vector <vector <double>> profile = formProfile(currentMotifs);
-			currentMotifs[j] = find(patterns[j], profile);
+			currentMotifs.push_back(mostProbableKmer(patterns[j], profile));
 		}
 		if (score(currentMotifs) < score(bestMotifs)) bestMotifs = currentMotifs;
 	}
-	for (auto& s : bestMotifs) cout << s << '\n';
+
+	for (auto& s : bestMotifs) cout << s << ' ';
 	return 0;
 }
