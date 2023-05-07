@@ -48,7 +48,7 @@ int main() {
 	while (cin >> input) dna.push_back(input);
 
 	int ans = 0;
-	for (string& s : dna) ans += findDistance(pattern, s);
+	for (string& s :  dna) ans += findDistance(pattern, s);
 	cout << ans << '\n';
 	return 0;
 }
