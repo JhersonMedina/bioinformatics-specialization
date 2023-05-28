@@ -1,3 +1,4 @@
+// Too many mind, no mind.
 #include <iostream>
 #include <cstdio>
 #include <cstdlib>
@@ -21,17 +22,34 @@
 #include <iomanip>
 
 using namespace std;
-/* *
- *
- * Too many mind, no mind.
- *
- * */
+
+#define mp make_pair
+#define fi first
+#define se second
+#define pb push_back
+#define ALL(x) (x).begin(), (x).end()
+#define RALL(x) (x).rbegin(), (x).rend()
+#define COMP(x) sort(ALL(x)); x.resize(unique(ALL(x)) - (x).begin())
+#define forn(i, n) for (int i = 0; i < (int)(n); ++i)
+#define fore(i, a, b) for (int i = (int)(a); i <= (int)(b); ++i)
+#define ford(i, n) for (int i = (int)(n) - 1; i >= 0; --i)
+
+using pii = pair <int, int>;
+using vi = vector <int>;
+using vpi = vector <pii>;
+using ll = long long;
+using pll = pair<ll, ll>;
+using vl = vector<ll>;
+using ld = long double;
+using vld = vector<ld>;
+
 const int maxn = 1e5 + 10;
 int in[maxn], out[maxn];
 bool vis[maxn];
 vector <int> euler;
 vector <int> graph[maxn], taken[maxn]; 
 void dfs(int u) {
+	//cout << u << endl;
 	for (int i = 0; i < graph[u].size(); i++) {
 		if (taken[u][i]) continue;
 		int v = graph[u][i];
@@ -44,35 +62,37 @@ int main() {
 	ios_base::sync_with_stdio(0), cin.tie(0);
 	freopen("input.txt", "r", stdin);
 	freopen("output.txt", "w", stdout);
-	string s; 
-	while (getline(cin, s)) {
-		if (s.empty()) break;
-		int i = 0;
-		while (s[i] != ':') i++;
-		int u = stoi(s.substr(0, i));
-		for (i += 2; i < s.size();) {
-			int j = i;
-			while (j < s.size() && isdigit(s[j])) j++;
-			int v = stoi(s.substr(i, j - i));
-			graph[u].push_back(v);
-			out[u]++; in[v]++;
-			j++;
-			i = j;
+	int m; cin >> m;
+	vector <string> patterns;
+	string s;
+	while (cin >> s) patterns.push_back(s);
+	int n = patterns.size();
+
+	forn(i, n) cin >> patterns[i];
+	forn(i, n) {
+		forn(j, n) if (i!= j) {
+			if (patterns[i].substr(1) == patterns[j].substr(0, m-1)) {
+				graph[i].pb(j);
+				out[i]++, in[j]++;
+				//cout << patterns[i] << ' ' << patterns[j] << endl;
+				//cout << i << ' ' << j << endl;
+			}
 		}
 	}
-	vector <int> roots;
-	for (int i = 0; i < maxn; i++) {
-		if (in[i] != out[i]) roots.push_back(i);
+	vi roots;
+	forn(i, n) {
+		if (in[i] != out[i]) roots.pb(i);
 		taken[i].assign(graph[i].size(), 0);
 	}
 	int root = 0;
-	for (int&i : roots) {
+	for (int& i : roots) {
 		if (out[i] - 1 == in[i]) root = i;
 	}
-
 	dfs(root);
-	reverse(euler.begin(), euler.end());
-	for (int& i : euler) cout << i << ' ';
+	reverse(ALL(euler));
+	cout << patterns[euler[0]];
+	fore(i, 1, euler.size()-1) cout << patterns[euler[i]][m-1];
 	cout << endl;
 	return 0;
 }
+
