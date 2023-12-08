@@ -1,0 +1,8 @@
+# depslib dependency file v1.0
+1702070170 source:c:\users\jhers\documents\university\bioinformatics-specialization\bioinformatics-ii\week4\genomesequencing\main.cpp
+	<iostream>
+	"Utilities.h"
+
+1702070017 c:\users\jhers\documents\university\bioinformatics-specialization\bioinformatics-ii\week4\genomesequencing\utilities.h
+	<bits/stdc++.h>
+
