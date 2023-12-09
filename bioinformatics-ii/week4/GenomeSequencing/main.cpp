@@ -9,12 +9,9 @@ int main() {
         freopen("input.txt", "r", stdin);
         freopen("output.txt", "w", stdout);
     #endif // LOCAL
-    vector<string> peps = readStrings();
+    string s = readStrings()[0];
     vector<int> spec = read();
-    int n = read()[0];
-    vector<pair<int, string>> a;
-    for(string& s : peps) a.push_back({linearScore(s, spec), s});
-    for(auto& [_, s] : trim(a, n)) cout << s << ' ';
+    cout << cycloScore(s, spec) << endl;
 
     return 0;
 }
