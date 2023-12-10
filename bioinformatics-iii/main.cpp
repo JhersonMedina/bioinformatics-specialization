@@ -9,14 +9,11 @@ int main() {
         freopen("input.txt", "r", stdin);
         freopen("output.txt", "w", stdout);
     #endif // LOCAL
-    int n, m; cin >> n >> m;
-    vector<vector<pair<int, int>>> dag(m+1);
-    int u, v, w;
-    while (cin >> u >> v >> w) {
-        dag[u].push_back({v, w});
-    }
-    vector<int> ans = longestPathInDag(n, m, dag);
-    cout << ans[0] << endl;
-    for(int i=1; i<(int)ans.size(); ++i) cout << ans[i] << ' ';
+    vector<int> input = iread();
+    int ma = input[0], mma=input[1], indel=input[2];
+    string s=sread()[0], t=sread()[0];
+    auto ans = overlapAlignment(ma, mma, indel, s, t);
+    cout << ans.first << endl << ans.second.first << endl << ans.second.second << endl;
+
     return 0;
 }

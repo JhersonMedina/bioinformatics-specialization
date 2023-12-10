@@ -1,5 +1,64 @@
 #include <bits/stdc++.h>
 using namespace std;
+const int oo = 1e9;
+
+int PAM250[26][26] = {
+    { 2,  0, -2,  0,  0, -3,  1, -1, -1, 0, -1, -2, -1,  0,  0,  1,  0, -2,  1,  1, 0,  0, -6,  0, -3, 0},
+    { 0,  0,  0,  0,  0,  0,  0,  0,  0, 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0,  0,  0,  0,  0, 0},
+    {-2,  0, 12, -5, -5, -4, -3, -3, -2, 0, -5, -6, -5, -4,  0, -3, -5, -4,  0, -2, 0, -2, -8,  0,  0, 0},
+    { 0,  0, -5,  4,  3, -6,  1,  1, -2, 0,  0, -4, -3,  2,  0, -1,  2, -1,  0,  0, 0, -2, -7,  0, -4, 0},
+    { 0,  0, -5,  3,  4, -5,  0,  1, -2, 0,  0, -3, -2,  1,  0, -1,  2, -1,  0,  0, 0, -2, -7,  0, -4, 0},
+    {-3,  0, -4, -6, -5,  9, -5, -2,  1, 0, -5,  2,  0, -3,  0, -5, -5, -4, -3, -3, 0, -1,  0,  0,  7, 0},
+    { 1,  0, -3,  1,  0, -5,  5, -2, -3, 0, -2, -4, -3,  0,  0,  0, -1, -3,  1,  0, 0, -1, -7,  0, -5, 0},
+    {-1,  0, -3,  1,  1, -2, -2,  6, -2, 0,  0, -2, -2,  2,  0,  0,  3,  2, -1, -1, 0, -2, -3,  0,  0, 0},
+    {-1,  0, -2, -2, -2,  1, -3, -2,  5, 0, -2,  2,  2, -2,  0, -2, -2, -2, -1,  0, 0,  4, -5,  0, -1, 0},
+    { 0,  0,  0,  0,  0,  0,  0,  0,  0, 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0,  0,  0,  0,  0, 0},
+    {-1,  0, -5,  0,  0, -5, -2,  0, -2, 0,  5, -3,  0,  1,  0, -1,  1,  3,  0,  0, 0, -2, -3,  0, -4, 0},
+    {-2,  0, -6, -4, -3,  2, -4, -2,  2, 0, -3,  6,  4, -3,  0, -3, -2, -3, -3, -2, 0,  2, -2,  0, -1, 0},
+    {-1,  0, -5, -3, -2,  0, -3, -2,  2, 0,  0,  4,  6, -2,  0, -2, -1,  0, -2, -1, 0,  2, -4,  0, -2, 0},
+    { 0,  0, -4,  2,  1, -3,  0,  2, -2, 0,  1, -3, -2,  2,  0,  0,  1,  0,  1,  0, 0, -2, -4,  0, -2, 0},
+    { 0,  0,  0,  0,  0,  0,  0,  0,  0, 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0,  0,  0,  0,  0, 0},
+    { 1,  0, -3, -1, -1, -5,  0,  0, -2, 0, -1, -3, -2,  0,  0,  6,  0,  0,  1,  0, 0, -1, -6,  0, -5, 0},
+    { 0,  0, -5,  2,  2, -5, -1,  3, -2, 0,  1, -2, -1,  1,  0,  0,  4,  1, -1, -1, 0, -2, -5,  0, -4, 0},
+    {-2,  0, -4, -1, -1, -4, -3,  2, -2, 0,  3, -3,  0,  0,  0,  0,  1,  6,  0, -1, 0, -2,  2,  0, -4, 0},
+    { 1,  0,  0,  0,  0, -3,  1, -1, -1, 0,  0, -3, -2,  1,  0,  1, -1,  0,  2,  1, 0, -1, -2,  0, -3, 0},
+    { 1,  0, -2,  0,  0, -3,  0, -1,  0, 0,  0, -2, -1,  0,  0,  0, -1, -1,  1,  3, 0,  0, -5,  0, -3, 0},
+    { 0,  0,  0,  0,  0,  0,  0,  0,  0, 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0,  0,  0,  0,  0, 0},
+    { 0,  0, -2, -2, -2, -1, -1, -2,  4, 0, -2,  2,  2, -2,  0, -1, -2, -2, -1,  0, 0,  4, -6,  0, -2, 0},
+    {-6,  0, -8, -7, -7,  0, -7, -3, -5, 0, -3, -2, -4, -4,  0, -6, -5,  2, -2, -5, 0, -6, 17,  0,  0, 0},
+    { 0,  0,  0,  0,  0,  0,  0,  0,  0, 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0,  0,  0,  0,  0, 0},
+    {-3,  0,  0, -4, -4,  7, -5,  0, -1, 0, -4, -1, -2, -2,  0, -5, -4, -4, -3, -3, 0, -2,  0,  0, 10, 0},
+    { 0,  0,  0,  0,  0,  0,  0,  0,  0, 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0,  0,  0,  0,  0, 0}
+};
+
+int BLOSUM62[30][30] = {
+    { 4, 0,  0, -2, -1, -2,  0, -2, -1,  0, -1, -1, -1, -2,  0, -1, -1, -1,  1,  0, 0,  0, -3, 0, -2,  0},
+    { 0, 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0,  0,  0, 0,  0,  0},
+    { 0, 0,  9, -3, -4, -2, -3, -3, -1,  0, -3, -1, -1, -3,  0, -3, -3, -3, -1, -1, 0, -1, -2, 0, -2,  0},
+    {-2, 0, -3,  6,  2, -3, -1, -1, -3,  0, -1, -4, -3,  1,  0, -1,  0, -2,  0, -1, 0, -3, -4, 0, -3,  0},
+    {-1, 0, -4,  2,  5, -3, -2,  0, -3,  0,  1, -3, -2,  0,  0, -1,  2,  0,  0, -1, 0, -2, -3, 0, -2,  0},
+    {-2, 0, -2, -3, -3,  6, -3, -1,  0,  0, -3,  0,  0, -3,  0, -4, -3, -3, -2, -2, 0, -1,  1, 0,  3,  0},
+    { 0, 0, -3, -1, -2, -3,  6, -2, -4,  0, -2, -4, -3,  0,  0, -2, -2, -2,  0, -2, 0, -3, -2, 0, -3,  0},
+    {-2, 0, -3, -1,  0, -1, -2,  8, -3,  0, -1, -3, -2,  1,  0, -2,  0,  0, -1, -2, 0, -3, -2, 0,  2,  0},
+    {-1, 0, -1, -3, -3,  0, -4, -3,  4,  0, -3,  2,  1, -3,  0, -3, -3, -3, -2, -1, 0,  3, -3, 0, -1,  0},
+    { 0, 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0,  0,  0, 0,  0,  0},
+    {-1, 0, -3, -1,  1, -3, -2, -1, -3,  0,  5, -2, -1,  0,  0, -1,  1,  2,  0, -1, 0, -2, -3, 0, -2,  0},
+    {-1, 0, -1, -4, -3,  0, -4, -3,  2,  0, -2,  4,  2, -3,  0, -3, -2, -2, -2, -1, 0,  1, -2, 0, -1,  0},
+    {-1, 0, -1, -3, -2,  0, -3, -2,  1,  0, -1,  2,  5, -2,  0, -2,  0, -1, -1, -1, 0,  1, -1, 0, -1,  0},
+    {-2, 0, -3,  1,  0, -3,  0,  1, -3,  0,  0, -3, -2,  6,  0, -2,  0,  0,  1,  0, 0, -3, -4, 0, -2,  0},
+    { 0, 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0,  0,  0, 0,  0,  0},
+    {-1, 0, -3, -1, -1, -4, -2, -2, -3,  0, -1, -3, -2, -2,  0,  7, -1, -2, -1, -1, 0, -2, -4, 0, -3,  0},
+    {-1, 0, -3,  0,  2, -3, -2,  0, -3,  0,  1, -2,  0,  0,  0, -1,  5,  1,  0, -1, 0, -2, -2, 0, -1,  0},
+    {-1, 0, -3, -2,  0, -3, -2,  0, -3,  0,  2, -2, -1,  0,  0, -2,  1,  5, -1, -1, 0, -3, -3, 0, -2,  0},
+    { 1, 0, -1,  0,  0, -2,  0, -1, -2,  0,  0, -2, -1,  1,  0, -1,  0, -1,  4,  1, 0, -2, -3, 0, -2,  0},
+    { 0, 0, -1, -1, -1, -2, -2, -2, -1,  0, -1, -1, -1,  0,  0, -1, -1, -1,  1,  5, 0,  0, -2, 0, -2,  0},
+    { 0, 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0,  0,  0, 0,  0,  0},
+    { 0, 0, -1, -3, -2, -1, -3, -3,  3,  0, -2,  1,  1, -3,  0, -2, -2, -3, -2,  0, 0,  4, -3, 0, -1,  0},
+    {-3, 0, -2, -4, -3,  1, -2, -2, -3,  0, -3, -2, -1, -4,  0, -4, -2, -3, -3, -2, 0, -3, 11, 0,  2,  0},
+    { 0, 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0,  0,  0, 0,  0,  0},
+    {-2, 0, -2, -3, -2,  3, -3,  2, -1,  0, -2, -1, -1, -2,  0, -3, -1, -2, -2, -2, 0, -1,  2, 0,  7,  0},
+    { 0, 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0,  0,  0, 0,  0,  0}
+};
 
 vector<int> iread() {
     string s;
@@ -36,6 +95,16 @@ int dpChange(int n, vector<int> coins) {
     for (int i=1; i<=n; ++i) {
         for(int& c : coins) {
             if (i-c>=0) dp[i] = dp[i] == -1 ? dp[i-c]+1 : min(dp[i], dp[i-c]+1);
+        }
+    }
+    return dp[n];
+}
+long long  dpChangeWays(int n, vector<int> coins) {
+    vector<long long> dp(n+1, 0);
+    dp[0] = 1;
+    for (int i=1; i<=n; ++i) {
+        for(int& c : coins) {
+            if (i-c>=0) dp[i] += dp[i-c];
         }
     }
     return dp[n];
@@ -107,3 +176,230 @@ vector<int> longestPathInDag(int s, int m, vector<vector<pair<int, int>>> dag) {
     reverse(path.begin(), path.end());
     return path;
 }
+pair<int, pair<string, string>> globalAlignment(int ma, int mma, int indel, string s, string t) {
+    function<int(char, char)> getScore = [&](char a, char b) {return a==b ? ma : -mma; };
+    int n = s.size(), m = t.size();
+    vector<vector<int>> dp(n+1, vector<int>(m+1, -oo));
+
+    dp[0][0] = 0;
+    for (int i=0; i<=n; ++i) {
+        for (int j=0; j<=m; ++j) {
+            if (i) dp[i][j] = max(dp[i][j], dp[i-1][j] - indel);
+            if (j) dp[i][j] = max(dp[i][j], dp[i][j-1] - indel);
+            if (i && j) dp[i][j] = max(dp[i][j], dp[i-1][j-1] + getScore(s[i-1], t[j-1]));
+        }
+    }
+
+    int i = n, j = m;
+    string sa = "", ta="";
+    while (i!=0 || j!=0) {
+        if (i && j && dp[i-1][j-1] + getScore(s[i-1], t[j-1]) == dp[i][j]) {
+            sa += s[i-1], ta += t[j-1];
+            i--, j--;
+        } else if (i && dp[i][j] == dp[i-1][j] - indel) {
+            sa += s[i-1], ta += '-';
+            i--;
+        } else {
+            sa += '-', ta += t[j-1];
+            j--;
+        }
+    }
+
+    reverse(sa.begin(), sa.end());
+    reverse(ta.begin(), ta.end());
+    return {dp[n][m], {sa, ta}};
+}
+pair<int, pair<string, string>> globalAlignmentBLOSUM(int indel, string s, string t) {
+    function<int(char, char)> getScore = [&](char a, char b) {return BLOSUM62[a-'A'][b-'A']; };
+    int n = s.size(), m = t.size();
+    vector<vector<int>> dp(n+1, vector<int>(m+1, -oo));
+
+    dp[0][0] = 0;
+    for (int i=0; i<=n; ++i) {
+        for (int j=0; j<=m; ++j) {
+            if (i) dp[i][j] = max(dp[i][j], dp[i-1][j] - indel);
+            if (j) dp[i][j] = max(dp[i][j], dp[i][j-1] - indel);
+            if (i && j) dp[i][j] = max(dp[i][j], dp[i-1][j-1] + getScore(s[i-1], t[j-1]));
+        }
+    }
+
+    int i = n, j = m;
+    string sa = "", ta="";
+    while (i!=0 || j!=0) {
+        if (i && j && dp[i-1][j-1] + getScore(s[i-1], t[j-1]) == dp[i][j]) {
+            sa += s[i-1], ta += t[j-1];
+            i--, j--;
+        } else if (i && dp[i][j] == dp[i-1][j] - indel) {
+            sa += s[i-1], ta += '-';
+            i--;
+        } else {
+            sa += '-', ta += t[j-1];
+            j--;
+        }
+    }
+
+    reverse(sa.begin(), sa.end());
+    reverse(ta.begin(), ta.end());
+    return {dp[n][m], {sa, ta}};
+}
+vector<vector<int>> globalAlignmentMatrix(int indel, string s, string t) {
+    function<int(char, char)> getScore = [&](char a, char b) {return BLOSUM62[a-'A'][b-'A']; };
+    int n = s.size(), m = t.size();
+    vector<vector<int>> dp(n+1, vector<int>(m+1, -oo));
+
+    dp[0][0] = 0;
+    for (int i=0; i<=n; ++i) {
+        for (int j=0; j<=m; ++j) {
+            if (i) dp[i][j] = max(dp[i][j], dp[i-1][j] - indel);
+            if (j) dp[i][j] = max(dp[i][j], dp[i][j-1] - indel);
+            if (i && j) dp[i][j] = max(dp[i][j], dp[i-1][j-1] + getScore(s[i-1], t[j-1]));
+        }
+    }
+    return dp;
+}
+pair<int, pair<string, string>> localAlignment(int indel, string s, string t) {
+    function<int(char, char)> getScore = [&](char a, char b) {return PAM250[a-'A'][b-'A']; };
+    int n = s.size(), m = t.size();
+    vector<vector<int>> dp(n+1, vector<int>(m+1, -oo));
+
+    dp[0][0] = 0;
+    for (int i=0; i<=n; ++i) {
+        for (int j=0; j<=m; ++j) {
+            dp[i][j] = 0;
+            if (i) dp[i][j] = max(dp[i][j], dp[i-1][j] - indel);
+            if (j) dp[i][j] = max(dp[i][j], dp[i][j-1] - indel);
+            if (i && j) dp[i][j] = max(dp[i][j], dp[i-1][j-1] + getScore(s[i-1], t[j-1]));
+        }
+    }
+
+    int r = n, c = m;
+    for (int i=0; i<=n; ++i) {
+        for (int j=0; j<=m; ++j) if (i+j>0) {
+            if (dp[i][j] > dp[r][c]) r=i, c=j;
+        }
+    }
+
+    int best=dp[r][c];
+    string sa = "", ta="";
+    while (r!=0 || c!=0) {
+        if (dp[r][c] == 0) break;
+        if (r && c && dp[r-1][c-1] + getScore(s[r-1], t[c-1]) == dp[r][c]) {
+            sa += s[r-1], ta += t[c-1];
+            r--, c--;
+        } else if (r && dp[r][c] == dp[r-1][c] - indel) {
+            sa += s[r-1], ta += '-';
+            r--;
+        } else {
+            sa += '-', ta += t[c-1];
+            c--;
+        }
+    }
+
+    reverse(sa.begin(), sa.end());
+    reverse(ta.begin(), ta.end());
+    return {best, {sa, ta}};
+}
+int editDistance(string s, string t) {
+    function<int(char, char)> getScore = [&](char a, char b) {return a != b; };
+    int n = s.size(), m = t.size();
+    vector<vector<int>> dp(n+1, vector<int>(m+1, oo));
+
+    dp[0][0] = 0;
+    for (int i=0; i<=n; ++i) {
+        for (int j=0; j<=m; ++j) {
+            if (i) dp[i][j] = min(dp[i][j], dp[i-1][j] + 1);
+            if (j) dp[i][j] = min(dp[i][j], dp[i][j-1] + 1);
+            if (i && j) dp[i][j] = min(dp[i][j], dp[i-1][j-1] + getScore(s[i-1], t[j-1]));
+        }
+    }
+    return dp[n][m];
+}
+pair<int, pair<string, string>> fitttingAlignment (int indel, string s, string t, int ma, int mma) {
+    //function<int(char, char)> getScore = [&](char a, char b) {return BLOSUM62[a-'A'][b-'A']; };
+    function<int(char, char)> getScore = [&](char a, char b) { return a==b ? ma : -mma; };
+    int n = s.size(), m=t.size();
+    int best = globalAlignmentMatrix(1, s, t)[n][m], l=0, r=n-1;
+
+    for(int i=0; i<n; ++i) {
+        string v = "";
+        for (int j=i; j<n && j-i+1 <= m; ++j) {
+            v += s[j];
+            int cur = globalAlignment(ma, mma, indel, v, t).first   ;
+            if (cur>best) best=cur, l=i, r=j;
+        }
+    }
+
+    n = r-l+1;
+    s=s.substr(l, n);
+    vector<vector<int>> dp = globalAlignmentMatrix(indel, s, t);
+
+    int i = n, j = m;
+    string sa = "", ta="";
+    while (i!=0 || j!=0) {
+        if (i && j && dp[i-1][j-1] + getScore(s[i-1], t[j-1]) == dp[i][j]) {
+            sa += s[i-1], ta += t[j-1];
+            i--, j--;
+        } else if (i && dp[i][j] == dp[i-1][j] - indel) {
+            sa += s[i-1], ta += '-';
+            i--;
+        } else {
+            sa += '-', ta += t[j-1];
+            j--;
+        }
+    }
+
+    reverse(sa.begin(), sa.end());
+    reverse(ta.begin(), ta.end());
+    return {dp[n][m], {sa, ta}};
+}
+pair<string, string> build(int ma, int mma, int indel, string&s, string t, vector<vector<int>>& dp) {
+    function<int(char, char)> getScore = [&](char a, char b) {return a==b ? ma : -mma; };
+
+    int i=s.size(), j=t.size();
+    string sa = "", ta="";
+    while (i!=0 || j!=0) {
+        if (i && j && dp[i-1][j-1] + getScore(s[i-1], t[j-1]) == dp[i][j]) {
+            sa += s[i-1], ta += t[j-1];
+            i--, j--;
+        } else if (i && dp[i][j] == dp[i-1][j] - indel) {
+            sa += s[i-1], ta += '-';
+            i--;
+        } else {
+            sa += '-', ta += t[j-1];
+            j--;
+        }
+    }
+
+    reverse(sa.begin(), sa.end());
+    reverse(ta.begin(), ta.end());
+    return {sa, ta};
+}
+pair<int, pair<string, string>> overlapAlignment (int ma, int mma, int indel, string s, string t) {
+    function<int(char, char)> getScore = [&](char a, char b) {return a==b ? ma : -mma; };
+    int n = s.size(), m=t.size();
+    int best=-oo;
+    string sa, ta;
+
+    for (int p=n-1; p>=0; --p) {
+        string ss = s.substr(p);
+        int nn=ss.size();
+        vector<vector<int>> dp(nn+1, vector<int>(m+1, -oo));
+        dp[0][0] = 0;
+
+        for (int i=0; i<=nn; ++i) {
+            for (int j=0; j<=m; ++j) {
+                if (i) dp[i][j] = max(dp[i][j], dp[i-1][j] - indel);
+                if (j) dp[i][j] = max(dp[i][j], dp[i][j-1] - indel);
+                if (i && j) dp[i][j] = max(dp[i][j], dp[i-1][j-1] + getScore(ss[i-1], t[j-1]));
+            }
+
+            for(int j=1; j<=m; ++j) if (dp[nn][j] > best) {
+                best = dp[i][j];
+                pair<string, string> res = build(ma, mma, indel, ss, t.substr(0, j), dp);
+                sa=res.first, ta=res.second;
+            }
+        }
+    }
+    return {best, {sa, ta}};
+}
+
