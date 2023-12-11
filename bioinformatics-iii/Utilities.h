@@ -1,5 +1,9 @@
 #include <bits/stdc++.h>
 using namespace std;
+using Align = pair<int, pair<string, string>>;
+using Edge = pair<pair<int, int>, pair<int, int>>;
+using MultipleAlignemnt = pair<int, vector<string>>;
+
 const int oo = 1e9;
 
 int PAM250[26][26] = {
@@ -31,7 +35,7 @@ int PAM250[26][26] = {
     { 0,  0,  0,  0,  0,  0,  0,  0,  0, 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0,  0,  0,  0,  0, 0}
 };
 
-int BLOSUM62[30][30] = {
+int BLOSUM62[26][26] = {
     { 4, 0,  0, -2, -1, -2,  0, -2, -1,  0, -1, -1, -1, -2,  0, -1, -1, -1,  1,  0, 0,  0, -3, 0, -2,  0},
     { 0, 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0,  0,  0, 0,  0,  0},
     { 0, 0,  9, -3, -4, -2, -3, -3, -1,  0, -3, -1, -1, -3,  0, -3, -3, -3, -1, -1, 0, -1, -2, 0, -2,  0},
@@ -176,7 +180,7 @@ vector<int> longestPathInDag(int s, int m, vector<vector<pair<int, int>>> dag) {
     reverse(path.begin(), path.end());
     return path;
 }
-pair<int, pair<string, string>> globalAlignment(int ma, int mma, int indel, string s, string t) {
+Align globalAlignment(int ma, int mma, int indel, string s, string t) {
     function<int(char, char)> getScore = [&](char a, char b) {return a==b ? ma : -mma; };
     int n = s.size(), m = t.size();
     vector<vector<int>> dp(n+1, vector<int>(m+1, -oo));
@@ -209,7 +213,7 @@ pair<int, pair<string, string>> globalAlignment(int ma, int mma, int indel, stri
     reverse(ta.begin(), ta.end());
     return {dp[n][m], {sa, ta}};
 }
-pair<int, pair<string, string>> globalAlignmentBLOSUM(int indel, string s, string t) {
+Align globalAlignmentBLOSUM(int indel, string s, string t) {
     function<int(char, char)> getScore = [&](char a, char b) {return BLOSUM62[a-'A'][b-'A']; };
     int n = s.size(), m = t.size();
     vector<vector<int>> dp(n+1, vector<int>(m+1, -oo));
@@ -257,7 +261,7 @@ vector<vector<int>> globalAlignmentMatrix(int indel, string s, string t) {
     }
     return dp;
 }
-pair<int, pair<string, string>> localAlignment(int indel, string s, string t) {
+Align localAlignment(int indel, string s, string t) {
     function<int(char, char)> getScore = [&](char a, char b) {return PAM250[a-'A'][b-'A']; };
     int n = s.size(), m = t.size();
     vector<vector<int>> dp(n+1, vector<int>(m+1, -oo));
@@ -314,7 +318,7 @@ int editDistance(string s, string t) {
     }
     return dp[n][m];
 }
-pair<int, pair<string, string>> fitttingAlignment (int indel, string s, string t, int ma, int mma) {
+Align fitttingAlignment (int indel, string s, string t, int ma, int mma) {
     //function<int(char, char)> getScore = [&](char a, char b) {return BLOSUM62[a-'A'][b-'A']; };
     function<int(char, char)> getScore = [&](char a, char b) { return a==b ? ma : -mma; };
     int n = s.size(), m=t.size();
@@ -374,7 +378,7 @@ pair<string, string> build(int ma, int mma, int indel, string&s, string t, vecto
     reverse(ta.begin(), ta.end());
     return {sa, ta};
 }
-pair<int, pair<string, string>> overlapAlignment (int ma, int mma, int indel, string s, string t) {
+Align overlapAlignment (int ma, int mma, int indel, string s, string t) {
     function<int(char, char)> getScore = [&](char a, char b) {return a==b ? ma : -mma; };
     int n = s.size(), m=t.size();
     int best=-oo;
@@ -402,4 +406,211 @@ pair<int, pair<string, string>> overlapAlignment (int ma, int mma, int indel, st
     }
     return {best, {sa, ta}};
 }
+Align affineGapAlignment(int ma, int mma, int go, int ge, string s, string t) {
+    int n = s.size(), m = t.size();
 
+    vector<vector<int>> dp[3] = {vector<vector<int>>(n+1, vector<int>(m+1)),
+                                 vector<vector<int>>(n+1, vector<int>(m+1)),
+                                 vector<vector<int>>(n+1, vector<int>(m+1))};
+    vector<vector<bool>> memo[3] = {vector<vector<bool>>(n+1, vector<bool>(m+1, 0)),
+                                    vector<vector<bool>>(n+1, vector<bool>(m+1, 0)),
+                                    vector<vector<bool>>(n+1, vector<bool>(m+1, 0))};
+
+    //0 middle, 2 = lower(s), 1 = upper(t)
+    function<int(int, int, int)> solve = [&](int k, int i, int j) {
+        if (i>=n && j>=m) return 0;
+        int& ans = dp[i][j][k];
+        if (memo[i][j][k]) return ans;
+
+        ans= -oo;
+        if (i<n) ans=max(ans, solve(1, i+1, j) - (k!=1?go:ge));
+        if (j<m) ans=max(ans, solve(2, i, j+1) - (k!=2?go:ge));
+        if (i<n && j<m) ans=max(ans, solve(0, i+1, j+1) + (s[i]==t[j]?ma:-mma));
+
+        memo[k][i][j]=1;
+        return ans;
+    };
+
+    string sa="", ta="";
+    function <void(int, int, int)> build = [&](int k, int i, int j) {
+        if (i>=n && j>=m) return;
+
+        int best = solve(k, i, j);
+        if (i<n && solve(1, i+1, j)-(k!=1?go:ge) == best) {
+            ta += '-'; sa += s[i];
+            build(1, i+1, j);
+            return;
+        }
+        if (j<m && solve(2, i, j+1)-(k!=2?go:ge) == best) {
+            ta += t[j]; sa += '-';
+            build(2, i, j+1);
+            return;
+        }
+
+        ta+=t[j], sa+=s[i];
+        build(0, i+1, j+1);
+    };
+
+    build(0, 0, 0);
+    return {solve(0, 0, 0), {sa, ta}};
+}
+/*
+Edge MiddleEdge(int ma, int mma, int indel, string s, string t) {
+    int n=s.size(), m=t.size();
+    vector<vector<int>> pre(n+1, vector<int>(2));
+    vector<vector<int>> su(n+1, vector<int>(2));
+
+    for(int j=0; j<=m/2; ++j) {
+        for(int i=0; i<=n; ++i) {
+            if (i) pre[i][j&1] = max(pre[i][j&1], pre[i-1][j&1] - indel);
+            if (j) pre[i][j&1] = max(pre[i][j&1], pre[i][(j-1)&1] - indel);
+            if (i && j) pre[i][j&1] = max(pre[i][j&1], pre[i-1][(j-1)&1] + (s[i-1]==t[j-1]?ma:-mma));
+        }
+    }
+
+
+    for(int j=m; j>=m/2; --j) {
+        for(int i=0; i<=n; ++i) {
+            if (i) su[i][j&1] = max(su[i][j&1], su[i-1][j&1] - indel);
+            if (j+1<=m) su[i][j&1] = max(su[i][j&1], su[i][(j+1)&1] - indel);
+            if (i && j+1<=m) su[i][j&1] = max(su[i][j&1], su[i-1][(j+1)&1] + (s[i-1]==t[j-1]?ma:-mma));
+        }
+    }
+
+    int r1=0, r2=0, c1=(m/2)&1, c2=(m/2+1)&1;
+    for(int i=0; i<=n; ++i) if(pre[i][c1] > pre[r1][c1]) r1=i;
+    if (r1+1<=n && su[r1+1][c2] + (s[r1]==t[m/2]?ma:-mma) == su[r1+1][c1]) return {{r1, m/2}, {r1+1, m/2+1}};
+    if (r1+1<=n && su[r1+1][c1] + (s[r1]==t[m/2]?ma:-mma) == su[r1+1][c1]) return {{r1, m/2}, {r1+1, m/2+1}};
+
+
+}
+*/
+MultipleAlignemnt miltipleAlignment(string s, string t, string w) {
+    int n=s.size(), m=t.size(), o=w.size();
+    int dp[15][15][15];
+    bool memo[15][15][15];
+
+    function<int(int, int, int)> solve = [&](int i, int j, int k) {
+        if (i>=n && j>=m && k>=o) return 0;
+        int& ans = dp[i][j][k];
+        if (memo[i][j][k]) return ans;
+
+        ans= -oo;
+        if (i<n) ans=max(ans, solve(i+1, j, k));
+        if (j<m) ans=max(ans, solve(i, j+1, k));
+        if (k<o) ans=max(ans, solve(i, j, k+1));
+        if (i<n && j<m)ans=max(ans, solve(i+1, j+1, k));
+        if (i<n && k<o) ans=max(ans, solve(i+1, j, k+1));
+        if (j<m && k<o) ans=max(ans, solve(i, j+1, k+1));
+        if (i<n && j<m && k<o) ans=max(ans, solve(i+1, j+1, k+1)+(s[i]==t[j] && t[j]==w[k]));
+
+        memo[i][j][k]=1;
+        return ans;
+    };
+
+    vector<string> ans(4, "");
+    function<void(int, int, int)> build = [&](int i, int j, int k) {
+        if (i>=n && j>=m && k>=o) return;
+        int best = solve(i, j, k);
+
+        if (i<n && best == solve(i+1, j, k)) {
+            ans[0] += s[i], ans[1] += '-', ans[2]+='-';
+            build(i+1, j, k);
+            return;
+        }
+        if (j<m && best == solve(i, j+1, k)) {
+            ans[0] += '-', ans[1] += t[j], ans[2]+='-';
+            build(i, j+1, k);
+            return;
+        }
+        if (k<o && best == solve(i, j, k+1)) {
+            ans[0] += '-', ans[1] += '-', ans[2]+=w[k];
+            build(i, j, k+1);
+            return;
+        }
+        if (i<n && j<m && best == solve(i+1, j+1, k)) {
+            ans[0] += s[i], ans[1] += t[j], ans[2]+='-';
+            build(i+1, j+1, k);
+            return;
+        }
+        if (i<n && k<o && best == solve(i+1, j, k+1)) {
+            ans[0] += s[i], ans[1] += '-', ans[2]+=w[k];
+            build(i+1, j, k+1);
+            return;
+        }
+        if (j<m && k<o && best == solve(i, j+1, k+1)) {
+            ans[0] += '-', ans[1] += t[j], ans[2]+=w[k];
+            build(i, j+1, k+1);
+            return;
+        }
+
+        ans[0] += s[i], ans[1] += t[j], ans[2]+=w[k];
+
+        build(i+1, j+1, k+1);
+    };
+
+    build(0, 0, 0);
+    return {solve(0, 0, 0), ans};
+}
+
+string miltipleLCS(string s, string t, string w) {
+    int n=s.size(), m=t.size(), o=w.size();
+    int dp[15][15][15];
+    bool memo[15][15][15];
+
+    function<int(int, int, int)> solve = [&](int i, int j, int k) {
+        if (i>=n && j>=m && k>=o) return 0;
+        int& ans = dp[i][j][k];
+        if (memo[i][j][k]) return ans;
+
+        ans=0;
+        if (i<n) ans=max(ans, solve(i+1, j, k));
+        if (j<m) ans=max(ans, solve(i, j+1, k));
+        if (k<o) ans=max(ans, solve(i, j, k+1));
+        if (i<n && j<m)ans=max(ans, solve(i+1, j+1, k));
+        if (i<n && k<o) ans=max(ans, solve(i+1, j, k+1));
+        if (j<m && k<o) ans=max(ans, solve(i, j+1, k+1));
+        if (i<n && j<m && k<o && s[i]==t[j]&&t[j]==w[k]) ans=max(ans, solve(i+1, j+1, k+1)+1);
+
+        memo[i][j][k]=1;
+        return ans;
+    };
+
+
+    vector<string> ans(4, "");
+    function<void(int, int, int)> build = [&](int i, int j, int k) {
+        if (i>=n && j>=m && k>=o) return;
+
+        int best = solve(i, j, k);
+        if (i<n && best == solve(i+1, j, k)) {
+            build(i+1, j, k);
+            return;
+        }
+        if (j<m && best == solve(i, j+1, k)) {
+            build(i, j+1, k);
+            return;
+        }
+        if (k<o && best == solve(i, j, k+1)) {
+            build(i, j, k+1);
+            return;
+        }
+        if (i<n && j<m && best == solve(i+1, j+1, k)) {
+            build(i+1, j+1, k);
+            return;
+        }
+        if (i<n && k<o && best == solve(i+1, j, k+1)) {
+            build(i+1, j, k+1);
+            return;
+        }
+        if (j<m && k<o && best == solve(i, j+1, k+1)) {
+            build(i, j+1, k+1);
+            return;
+        }
+
+        ans[0] += s[i];
+        build(i+1, j+1, k+1);
+    };
+
+    build(0, 0, 0);
+    return ans[0];
+}

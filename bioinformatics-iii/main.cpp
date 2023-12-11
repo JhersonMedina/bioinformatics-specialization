@@ -9,11 +9,8 @@ int main() {
         freopen("input.txt", "r", stdin);
         freopen("output.txt", "w", stdout);
     #endif // LOCAL
-    vector<int> input = iread();
-    int ma = input[0], mma=input[1], indel=input[2];
-    string s=sread()[0], t=sread()[0];
-    auto ans = overlapAlignment(ma, mma, indel, s, t);
-    cout << ans.first << endl << ans.second.first << endl << ans.second.second << endl;
+    string s=sread()[0], t=sread()[0], w=sread()[0];
+    cout << miltipleLCS(s, t, w) << endl;
 
     return 0;
 }
