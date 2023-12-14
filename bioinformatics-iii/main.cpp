@@ -9,8 +9,8 @@ int main() {
         freopen("input.txt", "r", stdin);
         freopen("output.txt", "w", stdout);
     #endif // LOCAL
-    string s=sread()[0], t=sread()[0], w=sread()[0];
-    cout << miltipleLCS(s, t, w) << endl;
-
+    int k = iread()[0];
+    string s = sread()[0], t = sread()[0];
+    cout << sharedKmer(k, s, t) << endl;
     return 0;
 }

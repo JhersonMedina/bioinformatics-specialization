@@ -1,10 +1,14 @@
 #include <bits/stdc++.h>
 using namespace std;
 using Align = pair<int, pair<string, string>>;
-using Edge = pair<pair<int, int>, pair<int, int>>;
+using Edge = pair<int, int>;
 using MultipleAlignemnt = pair<int, vector<string>>;
+using Cycle = vector<int>;
+using Chromosome = vector<int>;
+using Genome = vector<Chromosome>;
+using Graph = vector<vector<vector<int>>>;
 
-const int oo = 1e9;
+const int oo = 1e9, maxn = 2e6;
 
 int PAM250[26][26] = {
     { 2,  0, -2,  0,  0, -3,  1, -1, -1, 0, -1, -2, -1,  0,  0,  1,  0, -2,  1,  1, 0,  0, -6,  0, -3, 0},
@@ -454,37 +458,6 @@ Align affineGapAlignment(int ma, int mma, int go, int ge, string s, string t) {
     build(0, 0, 0);
     return {solve(0, 0, 0), {sa, ta}};
 }
-/*
-Edge MiddleEdge(int ma, int mma, int indel, string s, string t) {
-    int n=s.size(), m=t.size();
-    vector<vector<int>> pre(n+1, vector<int>(2));
-    vector<vector<int>> su(n+1, vector<int>(2));
-
-    for(int j=0; j<=m/2; ++j) {
-        for(int i=0; i<=n; ++i) {
-            if (i) pre[i][j&1] = max(pre[i][j&1], pre[i-1][j&1] - indel);
-            if (j) pre[i][j&1] = max(pre[i][j&1], pre[i][(j-1)&1] - indel);
-            if (i && j) pre[i][j&1] = max(pre[i][j&1], pre[i-1][(j-1)&1] + (s[i-1]==t[j-1]?ma:-mma));
-        }
-    }
-
-
-    for(int j=m; j>=m/2; --j) {
-        for(int i=0; i<=n; ++i) {
-            if (i) su[i][j&1] = max(su[i][j&1], su[i-1][j&1] - indel);
-            if (j+1<=m) su[i][j&1] = max(su[i][j&1], su[i][(j+1)&1] - indel);
-            if (i && j+1<=m) su[i][j&1] = max(su[i][j&1], su[i-1][(j+1)&1] + (s[i-1]==t[j-1]?ma:-mma));
-        }
-    }
-
-    int r1=0, r2=0, c1=(m/2)&1, c2=(m/2+1)&1;
-    for(int i=0; i<=n; ++i) if(pre[i][c1] > pre[r1][c1]) r1=i;
-    if (r1+1<=n && su[r1+1][c2] + (s[r1]==t[m/2]?ma:-mma) == su[r1+1][c1]) return {{r1, m/2}, {r1+1, m/2+1}};
-    if (r1+1<=n && su[r1+1][c1] + (s[r1]==t[m/2]?ma:-mma) == su[r1+1][c1]) return {{r1, m/2}, {r1+1, m/2+1}};
-
-
-}
-*/
 MultipleAlignemnt miltipleAlignment(string s, string t, string w) {
     int n=s.size(), m=t.size(), o=w.size();
     int dp[15][15][15];
@@ -613,4 +586,337 @@ string miltipleLCS(string s, string t, string w) {
 
     build(0, 0, 0);
     return ans[0];
+}
+vector<vector<int>> greedySorting(vector<int> p) {
+    int n=p.size();
+    vector<vector<int>> ans;
+    for (int i=0; i<n; ++i) {
+        int j=i;
+        while (j<n && abs(p[j])!=i+1) j++;
+
+        if (j>i) {
+            reverse(p.begin()+i, p.begin()+j+1);
+            for(int k=i; k<=j; ++k) p[k]*=-1;
+            ans.push_back(p);
+        }
+
+        if (p[i] < 0) {
+            p[i]*=-1;
+            ans.push_back(p);
+        }
+    }
+    return ans;
+}
+int countBreakPoints(vector<int> p) {
+    int n=p.size();
+    int ans = (p[0]!=1) + (p.back()+1 != n+1);
+    for(int i=0; i+1<n; ++i) ans += p[i]+1 != p[i+1];
+    return ans;
+}
+int countBlocks (Genome p) {
+    int n=0;
+    for(auto& it : p) n += it.size();
+    return n;
+}
+vector<int> toArray(string s) {
+    vector<int> ans;
+    for(int i=0; i<(int)s.size();) {
+        if (s[i] == '(' || s[i] == ')' || s[i] == ' ' || s[i] == ',') i++;
+        else {
+            int j=i;
+            while (j<(int)s.size() && (s[j] == '+' || s[j] == '-' || isdigit(s[j]))) ++j;
+            int x = stoi(s.substr(i, j-i));
+            ans.push_back(x);
+            i=j;
+        }
+    }
+    return ans;
+}
+string print(int n) { return (n<0 ? "-" : "+") + to_string(abs(n)); }
+string printArray(vector<int> s) {
+    string ans = "(";
+    for(int& i : s) ans += to_string(i) + " ";
+    ans.back() = ')';
+    return ans;
+}
+string printChromosome(Chromosome s) {
+    string ans = "(";
+    for(int& i : s) ans += print(i) + " ";
+    ans.back() = ')';
+    return ans;
+}
+Cycle chromosomeToCycle(Chromosome s) {
+    Cycle ans;
+    for (int& x :  s) {
+        ans.push_back(2*abs(x) - (x>0));
+        ans.push_back(2*abs(x) - (x<0));
+    }
+    return ans;
+}
+Chromosome cycleToChromosome(Cycle s) {
+    Chromosome ans;
+    int p=0;
+    for (int& x : s) {
+        if (p==0) p=x;
+        else {
+            ans.push_back((x+1)/2 * (x>p ? 1 : -1));
+            p=0;
+        }
+    }
+    return ans;
+}
+Genome getGenome(string s) {
+    Genome ans;
+    string cur;
+    for(char& c : s) {
+        cur += c;
+        if (c == ')') {
+            ans.push_back(toArray(cur));
+            cur = "";
+        }
+    }
+    return ans;
+}
+
+vector <Edge> coloredEdges(Genome p) {
+    vector<Edge> ans;
+    for(Chromosome s : p) {
+        Cycle a = chromosomeToCycle(s);
+        for (int i=1; i<(int)a.size(); i+=2) ans.push_back({a[i], a[(i+1)%a.size()]});
+    }
+    return ans;
+}
+vector <Edge> blackEdges(Genome p) {
+    vector<Edge> ans;
+    for(Chromosome s : p) {
+        for(int& i : s) {
+            int x = abs(i);
+            if (i<0) ans.push_back({2*x, 2*x-1});
+            else ans.push_back({2*x-1, 2*x});
+        }
+    }
+    return ans;
+}
+string printEdge(Edge e) { return "(" + to_string(e.first) + ", " + to_string(e.second) + ")";}
+string printEdges(vector<Edge> edges) {
+    string ans;
+    for(auto& p : edges) ans += printEdge(p) + ", ";
+    ans.pop_back();
+    ans.pop_back();
+
+    return ans;
+}
+vector<Edge> toEdges(string s) {
+    vector<Edge> edges;
+    int p = 0;
+    for (int i=0; i<(int)s.size();) {
+        if (!isdigit(s[i])) i++;
+        else {
+            int j=i;
+            while (j<(int)s.size() && isdigit(s[j])) j++;
+            int x = stoi(s.substr(i, j-i));
+            if (p == 0) p = x;
+            else {
+                edges.push_back({p, x});
+                p=0;
+            }
+            i=j;
+        }
+    }
+    return edges;
+}
+string printGenome(Genome g) {
+    string ans;
+    for(Chromosome c : g) {
+        ans += "(";
+        for (int& i : c) ans += print(i) + " ";
+        ans.pop_back();
+        ans += ")";
+    }
+    return ans;
+}
+
+Genome graphToGenome(vector<Edge> edges) {
+    cout << "Final Edges: " << printEdges(edges) << endl;
+    Genome ans;
+    Chromosome cur;
+    unordered_set<int> in;
+    for (auto& [u, v] : edges) {
+        int x = (u+1)/2, y = (v+1)/2;
+        cur.push_back(x * (x*2 == u ? 1 : -1));
+        if (in.count(y)) {
+            ans.push_back(cur);
+            cur.clear();
+        }
+        in.insert(x);
+    }
+    cout << "Genome: " << printGenome(ans) << endl;
+    return ans;
+}
+vector<Edge> twoBreakEdges(string s) {
+    vector<int> a = toArray(s);
+    return {{a[0], a[1]}, {a[2], a[3]}};
+}
+vector<Edge> orderEdges(vector<Edge> edges, vector<Edge> blackEdges) {
+    vector<vector<int>> graph(maxn, vector<int>());
+    for(auto& [u, v] : edges) graph[u].push_back(v);
+    for(auto& [u, v] : blackEdges) graph[u].push_back(v);
+
+    vector<Edge> ans;
+    vector<bool> vis(maxn, 0);
+    function<void(int)> dfs = [&](int u) {
+        vis[u]=1;
+        for(int& v : graph[u]) {
+            if ((u+1)/2 != (v+1)/2) ans.push_back({u, v});
+            if (!vis[v]) dfs(v);
+        }
+    };
+    for(int i=1; i<maxn; ++i) {
+        if (vis[i]) continue;
+        dfs(i);
+    }
+    return ans;
+}
+vector<Edge> twoBreakGenomeGraph(vector<Edge> edges, vector<Edge> toBreak) {
+    unordered_map<int, int> order;
+    vector<int> a;
+    for(auto& [u, v] : edges) {
+        order[u]=a.size();
+        a.push_back(u);
+
+        order[v]=a.size();
+        a.push_back(v);
+    }
+    cout << "Two break edges: " << printEdges(edges) << endl;
+    cout << "To swap: " << printEdges(toBreak) << endl;
+    assert(order.count(toBreak[0].second) && order.count(toBreak[1].first));
+    swap(a[order[toBreak[0].second]], a[order[toBreak[1].first]]);
+    vector<Edge> ans;
+    for(int i=0; i<(int)a.size(); i+=2) ans.push_back({a[i], a[i+1]});
+    return ans;
+}
+Genome twoBreakOnGenome(Genome p, vector<Edge> toBreak) {
+    vector<Edge> edges = twoBreakGenomeGraph(coloredEdges(p), toBreak);
+    return graphToGenome(edges);
+}
+Graph breakPointGraph(vector<Edge>redEdges, vector<Edge>blueEdges, int n) {
+    Graph graph;
+    graph.resize(2);
+    for(int c=0; c<2; ++c) graph[c].assign(n+1, vector<int>());
+
+    for(auto& [u, v] : redEdges) {
+        graph[0][u].push_back(v);
+        graph[0][v].push_back(u);
+    }
+
+    for(auto& [u, v] : blueEdges) {
+        graph[1][u].push_back(v);
+        graph[1][v].push_back(u);
+    }
+    return graph;
+}
+int distance(Genome p, Genome q) {
+    int n = 2*countBlocks(p);
+    Graph graph = breakPointGraph(coloredEdges(p), coloredEdges(q), n);
+    int ans=0;
+    for(int i=1; i<=n; ++i) {
+        int u=i, c=-1;
+
+        if (graph[0][u].size()) c=0;
+        else if (graph[1][u].size()) c=1;
+
+        while (c!=-1) {
+            do{
+                int v = graph[c][u].back();
+                graph[c][u].pop_back();
+                c^=1;
+                u=v;
+            } while (u!=i);
+            ans++;
+
+            if (graph[0][u].size()) c=0;
+            else if (graph[1][u].size()) c=1;
+            else c=-1;
+        }
+    }
+    assert(ans%2==0);
+    return n/2 - ans/2;
+}
+
+vector<Edge> findEdges(Graph graph) {
+    int n = graph[0].size();
+    for(int i=0; i<n; ++i) {
+        int u=i, c=0;
+
+        vector<Edge> toBreak;
+        while (!graph[c][u].empty()) {
+            do {
+                int v = graph[c][u].back();
+                graph[c][u].pop_back();
+                toBreak.push_back({u, v});
+                c ^= 1, u=v;
+            } while (u != i);
+            if (toBreak.size() >= 3) return {toBreak[0], toBreak[2]};
+            c=0;
+        }
+    }
+    return {};
+}
+bool equalEdges(Edge a, Edge b) {
+    if (a == b) return 1;
+    swap(a.first, a.second);
+    return a== b;
+}
+vector<Edge> removeEdges(vector<Edge> edges, vector<Edge> toBreak) {
+    vector<Edge> ans;
+    for(Edge& e : edges) {
+        if (!equalEdges(e, toBreak[0]) && !equalEdges(e, toBreak[1])) ans.push_back(e);
+    }
+    return ans;
+}
+vector<Edge> addEdges(vector<Edge> edges, vector<Edge> toBreak) {
+    vector<Edge> ans = edges;
+    swap(toBreak[0].second, toBreak[1].second);
+    for(Edge& e : toBreak) ans.push_back(e);
+    return ans;
+}
+vector<Genome> shortestRearrangementScenario(Genome p, Genome q) {
+    cout << printGenome(p) << endl;
+    int n = 2*countBlocks(p);
+    vector<Genome> ans = {p};
+    vector<Edge> redEdges = coloredEdges(p), blueEdges = coloredEdges(q);
+    Graph graph = breakPointGraph(redEdges, blueEdges, n);
+
+    for (vector<Edge> toBreak = findEdges(graph); !toBreak.empty(); toBreak = findEdges(graph)) {
+        redEdges = removeEdges(redEdges, toBreak);
+        redEdges = addEdges(redEdges, toBreak);
+        graph = breakPointGraph(redEdges, blueEdges, n);
+        cout << "Edges: " << printEdges(redEdges) << endl;
+
+        swap(toBreak[1].first, toBreak[1].second);
+        p = twoBreakOnGenome(p, toBreak);
+        ans.push_back(p);
+    }
+    return ans;
+}
+string reverseComplement(string s) {
+    reverse(s.begin(), s.end());
+    for(char& c : s) {
+        if (c == 'A') c = 'T';
+        else if (c == 'T') c = 'A';
+        else if (c == 'C') c = 'G';
+        else c = 'C';
+    }
+    return s;
+}
+int sharedKmer(int k, string s, string t) {
+    int ans;
+    for (int i=0; i+k-1 <s.size(); ++i) {
+        string ss = s.substr(i, k);
+        for (int j=0; j+k-1<t.size(); ++j) {
+            string tt = t.substr(j, k);
+            if (ss == tt || ss == reverseComplement(tt)) ans++;
+        }
+    }
+    return ans;
 }
