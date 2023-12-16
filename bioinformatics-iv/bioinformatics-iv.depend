@@ -1,0 +1,8 @@
+# depslib dependency file v1.0
+1702699358 source:c:\users\jhers\documents\university\bioinformatics-specialization\bioinformatics-iv\main.cpp
+	<iostream>
+	"Utilities.h"
+
+1702699694 c:\users\jhers\documents\university\bioinformatics-specialization\bioinformatics-iv\utilities.h
+	<bits/stdc++.h>
+
