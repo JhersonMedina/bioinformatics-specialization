@@ -9,11 +9,11 @@ int main() {
         freopen("input.txt", "r", stdin);
         freopen("output.txt", "w", stdout);
     #endif // LOCAL
-    int n = iread()[0];
-    Matrix d(n, vector<int>(n));
+    int n; cin >> n;
+    Matrix d(n, vector<double>(n));
     for(int i=0; i<n; ++i) {
         for (int j=0; j<n; ++j) cin >> d[i][j];
     }
-    cout << limbLength(d, 0) << endl;
+    for(WEdge e : readyToPrint(neighborJoining(d))) cout << printWEdge(e) << endl;
     return 0;
 }
