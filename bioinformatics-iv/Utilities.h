@@ -5,8 +5,20 @@ using Edge = pair<int, int>;
 using WEdge = pair<double, Edge>;
 using Matrix = vector<vector<double>>;
 using Cluster = vector<int>;
-using Tree = vector<WEdge>;
+using WTree = vector<WEdge>;
+using PEdge = pair<int, pair<string, string>>;
+using PTree = vector<PEdge>;
+using Label = vector<string>;
+using Adj = vector<vector<int>>;
+using Tree = vector<Edge>;
+struct Parsimony {
+    int score;
+    Adj tree;
+    Label label;
+};
+
 const int oo = 1e9;
+const char nuc[4] = {'A', 'T', 'C', 'G'};
 
 vector<int> iread() {
     string s; getline(cin, s);
@@ -53,12 +65,18 @@ WEdge toWEdge(string s) {
     ans.push_back(cur);
     return {ans[2], {ans[0], ans[1]}};
 }
-WEdge eread() {
+WEdge weread() {
     string s; getline(cin, s);
     return toWEdge(s);
 }
 string printWEdge(WEdge e) {
     return to_string(e.second.first) + "->" + to_string(e.second.second) + ":" +to_string(e.first);
+}
+string printPEdge (PEdge e) {
+    return e.second.first + "->" + e.second.second + ":" + to_string(e.first);
+}
+string printEdge (Edge e) {
+    return to_string(e.first) + "->" + to_string(e.second);
 }
 vector<WEdge> readEdges() {
     vector<WEdge> ans;
@@ -75,7 +93,7 @@ string printMatrix(Matrix m) {
     }
     return ans;
 }
-Tree readyToPrint(Tree t) {
+WTree readyToPrint(WTree t) {
     int n=t.size();
     for(int i=0; i<n; ++i) {
         WEdge e = t[i];
@@ -102,6 +120,14 @@ Matrix matrixFromEdges(vector<WEdge> edges, int n) {
     }
     for(int i=0; i<n; ++i) m[i][i]=0;
     return m;
+}
+Tree fromAdjToTree(Adj tree) {
+    Tree t;
+    int n=tree.size();
+    for(int u=0; u<n; ++u) {
+        for(int&v : tree[u]) t.push_back({u, v});
+    }
+    return t;
 }
 Matrix floydWarshall(Matrix dis) {
     int n=dis.size();
@@ -130,11 +156,11 @@ int limbLength(Matrix d, int j) {
     for(int k=0; k<n; ++k) if (k!=j) ans=min(ans, (d[i][j] + d[j][k] - d[i][k])/2);
     return ans;
 }
-Matrix getDistance(Tree t) {
+Matrix getDistance(WTree t) {
     Matrix dis = matrixFromEdges(t, numNodes(t));
     return floydWarshall(dis);
 }
-Tree additivePhylogeny(Matrix m, int leaves) {
+WTree additivePhylogeny(Matrix m, int leaves) {
     int n = m.size();
     if (n == 2) return {{m[0][1], {0, 1}}};
 
@@ -157,7 +183,7 @@ Tree additivePhylogeny(Matrix m, int leaves) {
     for (int i=0; i<n; ++i) mtrim[i].pop_back();
     mtrim.pop_back();
 
-    Tree t = additivePhylogeny(mtrim, leaves);
+    WTree t = additivePhylogeny(mtrim, leaves);
     int w=max(numNodes(t), leaves);
     Matrix dis = getDistance(t);
 
@@ -211,7 +237,7 @@ Cluster mergeClusters(Cluster& a, Cluster& b) {
     }
     return c;
 }
-Tree UPGMA(Matrix d, int n) {
+WTree UPGMA(Matrix d, int n) {
     vector<Cluster> clusters(n);
     map<Cluster, int> id;
     map<Cluster, double> age;
@@ -248,7 +274,7 @@ Tree UPGMA(Matrix d, int n) {
     return tree;
 }
 bool available(double n) { return n!=-1; }
-Tree neighborJoining(Matrix d) {
+WTree neighborJoining(Matrix d) {
     int n=d.size();
 
     vector<double> totalDistance(n, 0);
@@ -291,8 +317,136 @@ Tree neighborJoining(Matrix d) {
     }
     for(int i=0; i<=n; ++i) dnew[u][i]=dnew[i][u]=dnew[v][i]=dnew[i][v]=-1;
 
-    Tree tree = neighborJoining(dnew);
+    WTree tree = neighborJoining(dnew);
     tree.push_back({lu, {u, n}});
     tree.push_back({lv, {v, n}});
     return tree;
 }
+int diff(string& s, string& t) {
+    int ans=0;
+    for (int i=0; i<(int)s.size(); ++i) ans += s[i]!=t[i];
+    return ans;
+}
+Parsimony smallParsimony (Adj tree, Label& label, int root, int m, int l) {
+    int n = tree.size(), total=0;
+
+    for(int pos=0; pos<m; ++pos) {
+        vector<vector<int>> dp(4, vector<int>(n, -1));
+        function<int(int, int)> go = [&](int c, int u) {
+            if (u<l) return label[u][pos] == nuc[c] ? 0 : oo;
+            int& ans = dp[c][u];
+            if (ans!=-1) return ans;
+
+            int l=oo, r=oo;
+            for (int j=0; j<4; ++j) l=min(l, go(j, tree[u][0]) + (c!=j));
+            for (int k=0; k<4; ++k) r=min(r, go(k, tree[u][1]) + (c!=k));
+            return ans = l+r;
+        };
+        function<void(int, int)> build = [&](int c, int u) {
+            if (u<l) return;
+            label[u] += nuc[c];
+
+            int  l=0, r=0;
+            for (int j=0; j<4; ++j) if (go(l, tree[u][0]) + (l!=c) > go(j, tree[u][0]) + (j!=c)) l=j;
+            for (int k=0; k<4; ++k) if (go(r, tree[u][1]) + (r!=c) > go(k, tree[u][1]) + (k!=c)) r=k;
+
+            build(l, tree[u][0]);
+            build(r, tree[u][1]);
+        };
+
+        int best = oo, c=0;
+        for(int i=0; i<4; ++i) {
+            if (go(i, root) < best) best = go(i, root), c= i;
+        }
+        total += best;
+        build(c, root);
+    }
+    return {total, tree, label};
+}
+void removeEdge(vector<int>& adj, int u) {
+    auto it = find(adj.begin(), adj.end(), u);
+    adj.erase(it);
+}
+Parsimony smallParsimonyUnrooted(Adj tree, Label label, int m, int l) {
+    int n=tree.size();
+    int root = n, u=0, v=tree[0][0];
+    Adj oldTree = tree;
+
+    tree.push_back({u, v});
+    tree[u].push_back(root);
+    tree[v].push_back(root);
+
+    label.push_back("");
+
+    removeEdge(tree[u], v);
+    removeEdge(tree[v], u);
+
+    function<void(int,int)> addRoot = [&](int u, int p) {
+        auto it = find(tree[u].begin(), tree[u].end(), p);
+        if (it!=tree[u].end()) tree[u].erase(it);
+
+        for(int& v : tree[u]) addRoot(v, u);
+    };
+    addRoot(root, root);
+
+    Parsimony ans = smallParsimony(tree, label, root, m, l);
+    ans.tree = oldTree;
+    return ans;
+}
+void edgeReplace(vector<int>& adj, int u, int v) { for(int& i : adj) if (i == u) i = v; }
+pair<Adj, Adj> nearestNeighborsTree(Adj tree, int u, int v) {
+    vector<int> eu, ev;
+    for(int i=0; i<(int)tree[u].size(); ++i) {
+        if (tree[u][i]!=v) eu.push_back(i);
+    }
+    for(int i=0; i<(int)tree[v].size(); ++i) {
+        if (tree[v][i]!=u) ev.push_back(i);
+    }
+    pair<Adj, Adj> ans;
+
+    edgeReplace(tree[tree[u][eu[0]]], u, v);
+    edgeReplace(tree[tree[v][ev[0]]], v, u);
+    swap(tree[u][eu[0]], tree[v][ev[0]]);
+
+    ans.first = tree;
+
+    swap(tree[u][eu[0]], tree[v][ev[0]]);
+    edgeReplace(tree[tree[u][eu[0]]], v, u);
+    edgeReplace(tree[tree[v][ev[0]]], u, v);
+
+
+    edgeReplace(tree[tree[u][eu[0]]], u, v);
+    edgeReplace(tree[tree[v][ev[1]]], v, u);
+    swap(tree[u][eu[0]], tree[v][ev[1]]);
+
+    ans.second = tree;
+    return ans;
+}
+vector<Parsimony> nearestNeighborInterchange(Adj tree, Label label, int l) {
+    int score = oo, m=label[0].size();
+    Parsimony p = smallParsimonyUnrooted(tree, label, m, l);
+    vector<Parsimony> ans;
+    while (p.score < score) {
+        score = p.score;
+        tree = p.tree;
+        ans.push_back(p);
+
+        Parsimony best = p;
+        for(int u=l; u<(int)tree.size(); ++u) {
+            for(int& v : tree[u]) if (v>=l) {
+                pair<Adj, Adj> neighborTrees = nearestNeighborsTree(tree, u, v);
+
+                Parsimony a = smallParsimonyUnrooted(neighborTrees.first, label, m, l);
+                Parsimony b = smallParsimonyUnrooted(neighborTrees.second, label, m, l);
+
+                if (a.score>b.score) swap(a, b);
+                if (a.score<p.score) best = a;
+            }
+        }
+
+        p=best;
+    }
+    return ans;
+}
+
+
