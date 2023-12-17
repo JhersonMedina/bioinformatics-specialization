@@ -11,10 +11,17 @@ using PTree = vector<PEdge>;
 using Label = vector<string>;
 using Adj = vector<vector<int>>;
 using Tree = vector<Edge>;
+using Item = pair<int, int>;
 struct Parsimony {
     int score;
     Adj tree;
     Label label;
+
+    bool operator < (const Parsimony& b) const {
+        if (score != b.score) return score<b.score;
+        if (tree != b.tree) return tree<b.tree;
+        return label<b.label;
+    }
 };
 
 const int oo = 1e9;
@@ -422,6 +429,7 @@ pair<Adj, Adj> nearestNeighborsTree(Adj tree, int u, int v) {
     ans.second = tree;
     return ans;
 }
+
 vector<Parsimony> nearestNeighborInterchange(Adj tree, Label label, int l) {
     int score = oo, m=label[0].size();
     Parsimony p = smallParsimonyUnrooted(tree, label, m, l);
@@ -440,13 +448,11 @@ vector<Parsimony> nearestNeighborInterchange(Adj tree, Label label, int l) {
                 Parsimony b = smallParsimonyUnrooted(neighborTrees.second, label, m, l);
 
                 if (a.score>b.score) swap(a, b);
-                if (a.score<p.score) best = a;
+                if (a.score<best.score) best = a;
             }
         }
-
         p=best;
     }
     return ans;
 }
-
 

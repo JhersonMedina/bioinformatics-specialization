@@ -36,7 +36,7 @@ int main() {
 
     vector<Parsimony> ans = nearestNeighborInterchange(tree, label, n);
     for(int i=1; i<(int)ans.size(); ++i) {
-        Parsimony p = ans[i];
+        Parsimony& p = ans[i];
         cout << p.score << endl;
         for(int u=0; u<total; ++u) {
             for(int& v : p.tree[u]) {
