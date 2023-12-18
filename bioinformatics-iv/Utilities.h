@@ -12,6 +12,7 @@ using Label = vector<string>;
 using Adj = vector<vector<int>>;
 using Tree = vector<Edge>;
 using Item = pair<int, int>;
+using SEdge = pair<char, Edge>;
 struct Parsimony {
     int score;
     Adj tree;
@@ -24,9 +25,52 @@ struct Parsimony {
     }
 };
 
-const int oo = 1e9;
+const int oo = 1e9, maxp = 201;
 const char nuc[4] = {'A', 'T', 'C', 'G'};
-
+map<char, int> pepCode = {
+    {'G', 57},
+    {'A', 71},
+    {'S', 87},
+    {'P', 97},
+    {'V', 99},
+    {'T', 101},
+    {'C', 103},
+    {'I', 113},
+    {'L', 113},
+    {'N', 114},
+    {'D', 115},
+    {'K', 128},
+    {'Q', 128},
+    {'E', 129},
+    {'M', 131},
+    {'H', 137},
+    {'F', 147},
+    {'R', 156},
+    {'Y', 163},
+    {'W', 186}
+};
+map<int, char> toPepCode = {
+    {57,'G'},
+    {71,'A'},
+    {87,'S'},
+    {97,'P'},
+    {99,'V'},
+    {101,'T'},
+    {103,'C'},
+    {113,'I'},
+    {113,'L'},
+    {114,'N'},
+    {115,'D'},
+    {128,'K'},
+    {128,'Q'},
+    {129,'E'},
+    {131,'M'},
+    {137,'H'},
+    {147,'F'},
+    {156,'R'},
+    {163,'Y'},
+    {186,'W'}
+};
 vector<int> iread() {
     string s; getline(cin, s);
     vector<int> ans;
@@ -84,6 +128,10 @@ string printPEdge (PEdge e) {
 }
 string printEdge (Edge e) {
     return to_string(e.first) + "->" + to_string(e.second);
+}
+string printSEdge (SEdge e) {
+    string s = to_string(e.second.first) + "->" + to_string(e.second.second) + ":";
+    return s += e.first;
 }
 vector<WEdge> readEdges() {
     vector<WEdge> ans;
@@ -455,4 +503,101 @@ vector<Parsimony> nearestNeighborInterchange(Adj tree, Label label, int l) {
     }
     return ans;
 }
+Adj graphSpectrum(vector<int> spec) {
+    spec.insert(spec.begin(), 0);
+    cout << spec[0] << ' ' << spec[1] << endl;
+    int n=spec.size();
+    Adj graph(n, vector<int>());
+    for(int i=0; i<n; ++i) {
+        for (int j=i+1; j<n; ++j) {
+            int d = spec[j] - spec[i];
+            if (toPepCode.count(d)) cout << i << ' ' << j << endl, graph[i].push_back(j);
+        }
+    }
+    return graph;
+}
+vector<int> idealSpectrum(string s) {
+    int n = s.size();
+    vector<int> spec;
+    for(int i=0, sum=0; i<n; ++i) {
+        sum += pepCode[s[i]];
+        spec.push_back(sum);
+    }
+    for(int i=n-1, sum=0; i>0; --i) {
+        sum += pepCode[s[i]];
+        spec.push_back(sum);
+    }
+    sort(spec.begin(), spec.end());
+    return spec;
+}
+string decodingIdealSpectrum(vector<int> spec) {
+    string s="", t="";
+    Adj graph = graphSpectrum(spec);
+    function<void(int)> go = [&](int u) {
+        vector<int> is = idealSpectrum(t);
+        if (!is.empty() && is.back() >= spec.back()) {
+            if (is == spec) s = t;
+            return;
+        }
+
+        for(int& v : graph[u]) {
+            char c = toPepCode[spec[v] - spec[u]];
+            t += c;
+            go(v);
+            t.pop_back();
+        }
+    };
+    go(0);
+    return s;
+}
+vector<int> peptideToVector(string s) {
+    vector<int> ans;
+    for(char& c : s) {
+        for(int i=0; i < pepCode[c] - 1; ++i) ans.push_back(0);
+        ans.push_back(1);
+    }
+    return ans;
+}
+string vectorToPeptide(vector<int> a) {
+    string s="";
+    int n=a.size();
+    for (int i=0, j=0; i<n; i=j) {
+        while (j<n && a[j]==0) j++;
+        s += toPepCode[j-i+1];
+        j++;
+    }
+    return s;
+}
+string peptideSequencing(vector<int> spec) {
+    spec.insert(spec.begin(), 0);
+    int n=spec.size();
+    string ans;
+
+    vector<int> dp(n), vis(n);
+    function<int(int)> go = [&](int u) {
+        if (vis[u]) return dp[u];
+        dp[u] = u == n- 1 ? 0 : -oo;
+        for(auto& [w, _] : toPepCode) {
+            int v = u+w;
+            if (v<n) dp[u] = max(dp[u], spec[v] + go(v));
+        }
+        vis[u]=1;
+        return dp[u];
+    };
+    function<void(int)> build = [&](int u) {
+        int best = go(u);
+        for(auto& [w, c] : toPepCode) {
+            int v = u+w;
+            if (v<n && best == spec[v] + go(v)) {
+                ans += c;
+                build(v);
+                return;
+            }
+        }
+    };
+    build(0);
+
+    return ans;
+}
+
 
