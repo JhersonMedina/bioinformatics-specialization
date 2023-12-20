@@ -13,6 +13,9 @@ using Adj = vector<vector<int>>;
 using Tree = vector<Edge>;
 using Item = pair<int, int>;
 using SEdge = pair<char, Edge>;
+using Spectrum = vector<int>;
+using PSMatch = pair<string, int>;
+
 struct Parsimony {
     int score;
     Adj tree;
@@ -71,17 +74,17 @@ map<int, char> toPepCode = {
     {163,'Y'},
     {186,'W'}
 };
+map<char, int> decoyPep = {{'X', 4}, {'Z', 5}};
+map<int, char> toDecoyPep = {{4,'X'}, {5, 'Z'}};
 vector<int> iread() {
     string s; getline(cin, s);
     vector<int> ans;
-    int cur=0;
-    for(int i=0; i<(int)s.size(); ++i) {
-        if (s[i] == ' ') {
-            ans.push_back(cur);
-            cur=0;
-        } else cur = cur*10 + (s[i] - '0');
+    for(int i=0, j=0; i<(int)s.size(); ++i) {
+        j=i;
+        while (j<(int)s.size() && (s[j] == '-' || s[j] == '+' || isdigit(s[j]))) j++;
+        ans.push_back(stoi(s.substr(i, j-i)));
+        i=j;
     }
-    ans.push_back(cur);
     return ans;
 }
 vector<string> sread() {
@@ -133,6 +136,7 @@ string printSEdge (SEdge e) {
     string s = to_string(e.second.first) + "->" + to_string(e.second.second) + ":";
     return s += e.first;
 }
+string iprint(int n) { return (n>0 ? "+":"") + to_string(n); }
 vector<WEdge> readEdges() {
     vector<WEdge> ans;
     string s;
@@ -505,7 +509,6 @@ vector<Parsimony> nearestNeighborInterchange(Adj tree, Label label, int l) {
 }
 Adj graphSpectrum(vector<int> spec) {
     spec.insert(spec.begin(), 0);
-    cout << spec[0] << ' ' << spec[1] << endl;
     int n=spec.size();
     Adj graph(n, vector<int>());
     for(int i=0; i<n; ++i) {
@@ -599,5 +602,110 @@ string peptideSequencing(vector<int> spec) {
 
     return ans;
 }
+int pepScore(Spectrum spec, string pep) {
+    spec.insert(spec.begin(), 0);
+    int score=0, k=0;
+    for(char& c : pep) {
+        k += pepCode[c];
+        score += spec[k];
+    }
+    return score;
+}
+PSMatch peptideIdentification(Spectrum spec, string pep) {
+    int best=-oo, n=pep.size(), m=spec.size();
+    string s;
 
+    for(int i=0; i<n; ++i) {
+        int length = 0, j=i;
+        while (j<n && length < m) {
+            length += pepCode[pep[j]];
+            j++;
+        }
+        if (length == m) {
+            string t = pep.substr(i, j-i);
+            int score = pepScore(spec, t);
+            if (score>best) best=score, s=t;
+        }
+    }
+    return {s, best};
+}
+vector<string> PSMSearch(vector<Spectrum> specs, string proteome, int threshold) {
+    vector<string> ans;
+    for(Spectrum spec : specs) {
+        PSMatch res = peptideIdentification(spec, proteome);
+        if (res.second >= threshold) ans.push_back(res.first);
+    }
+    return ans;
+}
+long long spectralDictionarySize(Spectrum spec, int lo, int hi) {
+    spec.insert(spec.begin(), 0);
+    int n = spec.size();
+    vector<vector<int>> dp(n, vector<int>(hi+1));
+    dp[0][0]=1;
+    for (int i=0; i<n; ++i) for(int t=0; t<=hi; ++t) {
+        for(auto& [_, p] : pepCode) {
+            if (i+p<n && 0<=t+spec[i+p] && t+spec[i+p]<=hi) {
+                dp[i+p][t+spec[i+p]] += dp[i][t];
+            }
+        }
+    }
+    long long ans=0;
+    while (lo<=hi) ans += dp[n-1][lo++];
+    return ans;
+}
+double spectralDictionaryProb(Spectrum spec, int lo, int hi) {
+    spec.insert(spec.begin(), 0);
+    int n = spec.size();
+    vector<vector<double>> dp(n, vector<double>(hi+1));
+    dp[0][0]=1.0;
+    for (int i=0; i<n; ++i) for(int t=0; t<=hi; ++t) {
+        for(auto& [_, p] : pepCode) {
+            if (i+p<n && 0<=t+spec[i+p] && t+spec[i+p]<=hi) {
+                dp[i+p][t+spec[i+p]] += dp[i][t]/20.0;
+            }
+        }
+    }
+    double ans=0;
+    while (lo<=hi) ans += dp[n-1][lo++];
+    return ans;
+}
+string spectralAlignmentProblem(string pep, Spectrum spec, int k) {
+    int n=spec.size(), m=pep.size();
+    spec.insert(spec.begin(), 0);
+    vector<vector<vector<int>>> dp(n+1, vector<vector<int>>(m+1, vector<int>(k+1)));
+    vector<vector<vector<bool>>> memo(n+1, vector<vector<bool>>(m+1, vector<bool>(k+1)));
 
+    function<int(int, int, int)> go = [&](int i, int j, int r) {
+        if (j>=m) return i==n ? 0 : -oo;
+        int& ans = dp[i][j][r];
+        if (memo[i][j][r]) return ans;
+
+        ans = -oo;
+        int p = pepCode[pep[j]]-1;
+        for(int a=0; i+a+1<=n; ++a) {
+            if (r-(a!=p) >= 0) ans=max(ans, go(i+a+1, j+1, r-(a!=p)) + spec[i+a+1]);
+        }
+
+        memo[i][j][r]=1;
+        return ans;
+    };
+    string pepMod;
+
+    function<void(int, int, int)> build = [&](int i, int j, int r) {
+        if (j>=m) return;
+        int best = go(i, j, r);
+
+        int p = pepCode[pep[j]]-1;
+        pepMod += pep[j];
+        for(int a=0; i+a+1<=n; ++a) {
+            if (r-(a!=p) >= 0 && best == go(i+a+1, j+1, r-(a!=p))+spec[i+a+1]) {
+                if (a!=p) pepMod += "(" + iprint(a-p) + ")";
+                build(i+a+1, j+1, r-(a!=p));
+                return;
+            }
+        }
+    };
+
+    build(0, 0, k);
+    return pepMod;
+}

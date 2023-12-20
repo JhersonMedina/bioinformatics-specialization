@@ -9,7 +9,9 @@ int main() {
         freopen("input.txt", "r", stdin);
         freopen("output.txt", "w", stdout);
     #endif // LOCAL
-    vector<int> a = iread();
-    cout << peptideSequencing(a) << endl;
+    string pep = sread()[0];
+    Spectrum spec = iread();
+    int k = iread()[0];
+    cout << spectralAlignmentProblem(pep, spec, k) << endl;
     return 0;
 }
