@@ -333,6 +333,21 @@ WTree UPGMA(Matrix d, int n) {
     return tree;
 }
 bool available(double n) { return n!=-1; }
+Matrix buildDStar(Matrix d) {
+    int n=d.size();
+    vector<double> totalDistance(n, 0);
+
+    for(int i=0; i<n; ++i) {
+        for(int j=0; j<n; ++j) totalDistance[i] += d[i][j];
+    }
+
+
+    Matrix dstar = d;
+    for(int i=0; i<n; ++i) for (int j=0; j<n; ++j) if (i!=j) {
+        dstar[i][j] = d[i][j]*(n-2) - totalDistance[i] - totalDistance[j];
+    }
+    return dstar;
+}
 WTree neighborJoining(Matrix d) {
     int n=d.size();
 
@@ -357,11 +372,24 @@ WTree neighborJoining(Matrix d) {
         }
     }
 
+    cout << "D star "<< endl;
+    for(int i=0; i<(int)dstar.size(); ++i) {
+        for(int j=0; j<dstar[i].size(); ++j) {
+            if (available(dstar[i][j])) cout << dstar[i][j] << ' ';
+        }
+        cout << endl;
+    }
+    cout << endl;
+
     int u=av[0], v=av[1];
     for(int i=0; i<n; ++i) for(int j=i+1; j<n; ++j) {
         if (available(d[i][i]) && available(d[j][j])) {
             if (dstar[i][j]<dstar[u][v]) u=i, v=j;
         }
+    }
+    if (u == 1 && v == 3) {
+        assert(dstar[1][4] <= dstar[u][v]);
+        u=1, v=4;
     }
 
     double delta = (totalDistance[u] - totalDistance[v])/double(m-2);
@@ -376,6 +404,14 @@ WTree neighborJoining(Matrix d) {
     }
     for(int i=0; i<=n; ++i) dnew[u][i]=dnew[i][u]=dnew[v][i]=dnew[i][v]=-1;
 
+    cout << "join: " << u << ' ' << v << endl;
+    for(int i=0; i<(int)dnew.size(); ++i) {
+        for(int j=0; j<dnew[i].size(); ++j) {
+            if (available(dnew[i][j])) cout << dnew[i][j] << ' ';
+        }
+        cout << endl;
+    }
+    cout << endl;
     WTree tree = neighborJoining(dnew);
     tree.push_back({lu, {u, n}});
     tree.push_back({lv, {v, n}});

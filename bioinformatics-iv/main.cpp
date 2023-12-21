@@ -9,9 +9,9 @@ int main() {
         freopen("input.txt", "r", stdin);
         freopen("output.txt", "w", stdout);
     #endif // LOCAL
-    string pep = sread()[0];
-    Spectrum spec = iread();
-    int k = iread()[0];
-    cout << spectralAlignmentProblem(pep, spec, k) << endl;
+    int n; cin >> n;
+    Matrix d(n, vector<double>(n));
+    for(int i=0; i<n; ++i) for(int j=0; j<n; ++j) cin >> d[i][j];
+    for (WEdge& e : neighborJoining(d)) cout << printWEdge(e) << endl;
     return 0;
 }
