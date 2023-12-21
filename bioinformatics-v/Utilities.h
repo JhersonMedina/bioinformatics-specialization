@@ -150,8 +150,8 @@ vector<pt> lloydAlgorithm(vector<pt> points, int k) {
 
         for(vector<pt>& c : cluster) centres_new.push_back(gravityCentre(c));
 
-        if (arraysAreEqual(centres, centres_new)) break;
-        assert(squareErrorDistortion(points, centres) >= squareErrorDistortion(points, centres_new));
+        //if (arraysAreEqual(centres, centres_new)) break;
+        if(squareErrorDistortion(points, centres) - squareErrorDistortion(points, centres_new) <= 1e-6) break;
         centres = centres_new;
     }
     return centres;

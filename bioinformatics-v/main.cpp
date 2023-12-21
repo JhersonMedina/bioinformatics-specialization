@@ -8,7 +8,7 @@ int main() {
         freopen("input.txt", "r", stdin);
         freopen("output.txt", "w", stdout);
     #endif // LOCAL
-    int k, m, n = 1005-1; cin >> k >> m;
+    int k, m, n = 1481-1; cin >> k >> m;
     vector<pt> p(n), c(k);
     for(int i=0; i<n; ++i) p[i] = ptRead(m);
     //for(int i=0; i<k; ++i) c[i] = ptRead(m);
