@@ -8,12 +8,9 @@ int main() {
         freopen("input.txt", "r", stdin);
         freopen("output.txt", "w", stdout);
     #endif // LOCAL
-    int k, m, n = 1313-2; cin >> k >> m;
-    T beta; cin >> beta;
-
-    vector<pt> p(n), c(k);
-    for(int i=0; i<n; ++i) p[i] = ptRead(m);
-    vector<pt> r = softKMeans(p, k, m, beta);
-    printSet(r);
+    int n; cin >> n;
+    Matrix d(n, vector<T> (n));
+    for (int i=0; i<n; ++i) for (int j=0; j<n; ++j) cin >>d[i][j];
+    for(Cluster& i : HierarchialClustering(d, n)) printCluster(i);
     return 0;
 }

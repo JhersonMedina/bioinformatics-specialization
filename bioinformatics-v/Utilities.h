@@ -10,7 +10,7 @@ double realRand(int l, int r) {
 }
 
 using T = double;
-const T EPS = 1e-6;
+const T EPS = 1e-6, oo = 1e18;
 struct pt {
     vector<T> x;
     pt operator + (pt p) {
@@ -74,6 +74,7 @@ void shuffleArray(vector<pt>& a) {
 using PD = pair<T, int>;
 using Matrix = vector<vector<T>>;
 using Data = vector<pt>;
+using Cluster = vector<int>;
 
 pt ptRead(int m) {
     pt p;
@@ -98,7 +99,10 @@ void printPoint(pt p) { for(T d : p.x) cout << d << ' '; cout << endl;}
 void printSet(vector<pt> p) {
     for(pt& pi : p) printPoint(pi);
 }
-
+void printCluster(Cluster& c) {
+    for(int& i : c) cout << i+1 << ' ';
+    cout << endl;
+}
 
 double maxDistance(vector<pt> points, vector<pt> centres) {
     double ans = -1.0;
@@ -210,4 +214,60 @@ Data softKMeans(vector<pt> data, int k, int m, T beta) {
         centres = centresNew;
     }
     return centres;
+}
+T clusterDistance(Cluster& a, Cluster& b, Matrix d) {
+    T dis=0.0;
+    for(int& i : a) for(int& j : b) dis += d[i][j];
+    return dis / T(a.size()*b.size());
+}
+Cluster mergeClusters(Cluster& a, Cluster& b) {
+    Cluster c;
+    for(int i=0, j=0; i<(int)a.size() || j<(int)b.size(); ) {
+        if (i<(int)a.size() && j<(int)b.size()) {
+            if (a[i]<b[j]) {
+                c.push_back(a[i]);
+                i++;
+            } else {
+                c.push_back(b[j]);
+                j++;
+            }
+        } else if (i<(int)a.size()) {
+            c.push_back(a[i]);
+            i++;
+        } else {
+            c.push_back(b[j]);
+            j++;
+        }
+    }
+    return c;
+}
+vector<Cluster> HierarchialClustering(Matrix d, int n) {
+    vector<Cluster> clusters(n), ans;
+    map<Cluster, int> id;
+    for(int i=0; i<n; ++i) {
+        clusters[i]={i};
+        id[clusters[i]]=i;
+    }
+
+    int nodes=n;
+    while (clusters.size()>1) {
+        T best = oo;
+        int u, v;
+
+        for(int i=0; i<(int)clusters.size(); ++i) {
+            for(int j=i+1; j<(int)clusters.size(); ++j) {
+                double cur = clusterDistance(clusters[i], clusters[j], d);
+                if (cur<best) best=cur, u=i, v=j;
+            }
+        }
+
+        Cluster c = mergeClusters(clusters[u], clusters[v]), a=clusters[u], b=clusters[v];
+        id[c] = nodes++;
+        ans.push_back(c);
+
+        clusters.erase(clusters.begin()+v);
+        clusters.erase(clusters.begin()+u);
+        clusters.push_back(c);
+    }
+    return ans;
 }
