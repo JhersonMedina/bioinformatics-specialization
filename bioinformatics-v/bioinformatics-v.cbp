@@ -32,7 +32,10 @@
 			<Add option="-Wall" />
 			<Add option="-fexceptions" />
 		</Compiler>
+		<Unit filename="Utilities.h" />
+		<Unit filename="input.txt" />
 		<Unit filename="main.cpp" />
+		<Unit filename="output.txt" />
 		<Extensions>
 			<lib_finder disable_auto="1" />
 		</Extensions>

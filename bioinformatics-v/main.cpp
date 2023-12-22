@@ -8,13 +8,12 @@ int main() {
         freopen("input.txt", "r", stdin);
         freopen("output.txt", "w", stdout);
     #endif // LOCAL
-    int k, m, n = 1481-1; cin >> k >> m;
+    int k, m, n = 1313-2; cin >> k >> m;
+    T beta; cin >> beta;
+
     vector<pt> p(n), c(k);
     for(int i=0; i<n; ++i) p[i] = ptRead(m);
-    //for(int i=0; i<k; ++i) c[i] = ptRead(m);
-    vector<pt> r = lloydAlgorithm(p, k);
+    vector<pt> r = softKMeans(p, k, m, beta);
     printSet(r);
-
-   // cout << squareErrorDistortion(p, c) << ' ' << squareErrorDistortion(p, r) << endl;
     return 0;
 }

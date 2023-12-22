@@ -5,8 +5,12 @@ mt19937 rng(chrono::steady_clock::now().time_since_epoch().count());
 int rand(int l, int r) {
 	return uniform_int_distribution<int>(l,r)(rng);
 }
+double realRand(int l, int r) {
+    return uniform_real_distribution<double>(l, r)(rng);
+}
 
 using T = double;
+const T EPS = 1e-6;
 struct pt {
     vector<T> x;
     pt operator + (pt p) {
@@ -27,7 +31,7 @@ struct pt {
     bool operator == (pt p) {
         if (x.size()!=p.x.size()) return 0;
 
-        for(int i=0; i<(int)x.size(); ++i) if (x[i]!=p.x[i]) return 0;
+        for(int i=0; i<(int)x.size(); ++i) if (abs(x[i] - p.x[i]) > EPS) return 0;
         return 1;
     }
     bool operator <(pt p) {
@@ -45,6 +49,16 @@ double sq(pt p) {
 double abs(pt p) { return sqrt(sq(p)); }
 double distance(pt p, pt q) { return abs(p - q); }
 double distanceSquare(pt p, pt q) { return sq(p - q); }
+T sum(pt p) {
+    T ans=0.0;
+    for(T& i : p.x) ans += i;
+    return ans;
+}
+T dot(pt p, pt q) {
+    T ans=0.0;
+    for(int i=0; i<(int)p.x.size(); ++i) ans += p.x[i]*q.x[i];
+    return ans;
+}
 
 bool arraysAreEqual(vector<pt> a, vector<pt> b) {
     if (a.size()!=b.size()) return 0;
@@ -58,6 +72,8 @@ void shuffleArray(vector<pt>& a) {
 }
 
 using PD = pair<T, int>;
+using Matrix = vector<vector<T>>;
+using Data = vector<pt>;
 
 pt ptRead(int m) {
     pt p;
@@ -136,7 +152,6 @@ pt gravityCentre(vector<pt>& a) {
     return ans / T(n);
 }
 vector<pt> lloydAlgorithm(vector<pt> points, int k) {
-    int m=points[0].x.size();
     vector<pt> centres = vector<pt>(points.begin(), points.begin()+k);
 
     while (true) {
@@ -150,18 +165,49 @@ vector<pt> lloydAlgorithm(vector<pt> points, int k) {
 
         for(vector<pt>& c : cluster) centres_new.push_back(gravityCentre(c));
 
-        //if (arraysAreEqual(centres, centres_new)) break;
         if(squareErrorDistortion(points, centres) - squareErrorDistortion(points, centres_new) <= 1e-6) break;
         centres = centres_new;
     }
     return centres;
 }
-vector<pt> bestLloyd(vector<pt> points, int k) {
-    vector<pt> ans = lloydAlgorithm(points, k);
-    /*for (int _=0; _<100; ++_) {
-        shuffleArray(points);
-        vector<pt> cur = lloydAlgorithm(points, k);
-        if (squareErrorDistortion(points, ans) > squareErrorDistortion(points, cur)) ans=cur;
-    }*/
-    return ans;
+pt randomPoint(int m) {
+    pt p;
+    for(int i=0; i<m; ++i) p.x.push_back(realRand(-100, 100));
+    return p;
+}
+Data softKMeans(vector<pt> data, int k, int m, T beta) {
+    int n = data.size();
+    vector<pt> centres = vector<pt>(data.begin(), data.begin()+k);
+
+    function<Matrix(Data, Data)> centresToSoftClusters = [&](Data d, Data c) {
+        Matrix hiddenMatrix(k, vector<T>(n));
+
+        for(int j=0; j<n; ++j) {
+            T totalDistance = 0.0;
+            for (int i=0; i<k; ++i) totalDistance += exp(-beta*distance(c[i], d[j]));
+            for (int i=0; i<k; ++i) hiddenMatrix[i][j] = exp(-beta*distance(c[i], d[j])) / totalDistance;
+        }
+        return hiddenMatrix;
+    };
+    function<Data(Matrix)> softClustersToCentres = [&](Matrix hiddenMatrix) {
+        Data d(m), ans(k);
+        for (int i=0; i<m; ++i) for (int j=0; j<n; ++j) d[i].x.push_back(data[j].x[i]);
+        for(int i=0; i<k; ++i) {
+            ans[i].x.assign(m, 0.0);
+
+            for(int j=0; j<m; ++j) {
+                pt p; p.x = hiddenMatrix[i];
+                ans[i].x[j] = dot(p,d[j]) / sum(p);
+            }
+        }
+
+        return ans;
+    };
+
+    while (true) {
+        Data centresNew = softClustersToCentres(centresToSoftClusters(data, centres));
+        if (arraysAreEqual(centresNew, centres)) break;
+        centres = centresNew;
+    }
+    return centres;
 }
