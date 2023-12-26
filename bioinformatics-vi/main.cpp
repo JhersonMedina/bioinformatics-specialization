@@ -8,8 +8,9 @@ int main() {
         freopen("input.txt", "r", stdin);
         freopen("output.txt", "w", stdout);
     #endif // LOCAL
-    string s, t; cin >> s >> t;
-    SuffixTree tree(s + "#" + t);
-    cout << tree.shortestNonSharedString() << endl;
+    string s = sread()[0];
+    vector<string> p = sread();
+    int d = iread()[0];
+    for(Match& m : multipleAproximatePatternMatching(s, p, d)) printMatch(m);
     return 0;
 }
