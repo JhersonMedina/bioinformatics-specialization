@@ -1,15 +1,19 @@
 #include <bits/stdc++.h>
 using namespace std;
 
+using ld = long double;
 using Path = vector<int>;
 using Graph = vector<vector<int>>;
 using Match = pair<string, vector<int>>;
+using Matrix = vector<vector<ld>>;
 struct BWT {
     string p;
     int top, bottom, d;
 };
 
 const int MAXN = 1e5, INF = 1e9;
+const ld oo = 1e18;
+
 struct Trie {
     vector<vector<int>> trie = {vector<int>(256, 0)};
     vector<int> leaf = {0}, color = {0};
@@ -159,13 +163,19 @@ vector<string> sread() {
     vector<string> ans;
     string cur;
     for(int i=0; i<(int)s.size(); ++i) {
-        if (s[i] == ' ') {
-            ans.push_back(cur);
+        if (s[i] == ' ' || s[i] == '\t') {
+            if (!cur.empty()) ans.push_back(cur);
             cur="";
         } else cur+=s[i];
     }
     ans.push_back(cur);
     return ans;
+}
+string cread() {
+    vector<string> p = sread();
+    string s;
+    for(string& t : p) s += t[0];
+    return s;
 }
 vector<int> iread() {
     string s; getline(cin, s);
@@ -179,6 +189,7 @@ vector<int> iread() {
     }
     return ans;
 }
+
 void printMatch(pair<string, vector<int>> match) {
     cout << match.first << ": ";
     for(int& i : match.second) cout << i << ' ';
@@ -458,5 +469,134 @@ vector<Match> multipleAproximatePatternMatching(string s, vector<string> pattern
 
     return ans;
 }
+ld hiddenPathProbability(string p, Matrix t, int n) {
+    double ans = 1.0/double(n);
+    for(int i=1; i<(int)p.size(); ++i) ans *= t[p[i-1]][p[i]];
+    return ans;
+}
+ld outcomehiddenProbability(string x, string pi, Matrix t) {
+    ld ans = 1.0;
+    for(int i=0; i<(int)x.size(); ++i) ans *= t[pi[i]][x[i]];
+    return ans;
+}
+struct Viterbi {
+    int n, m;
+    vector<int> x;
+    string e,  a;
+    Matrix g, t;
+
+    Viterbi(string xs, string e, string a): e(e), a(a) {
+        n = a.size(), m=e.size();
+
+        for(char& c : xs) x.push_back(getE(c));
+    }
+
+    int getE(char c) {
+        sort(e.begin(), e.end());
+        return lower_bound(e.begin(), e.end(), c) - e.begin();
+    }
+    int getA(char c) {
+        sort(a.begin(), a.end());
+        return lower_bound(a.begin(), a.end(), c) - a.begin();
+    }
+
+    void readTransition() {
+        string col = cread();
+        Matrix d(n, vector<ld>(n));
+
+        for (int i=0; i<n; ++i) {
+            vector<string> row = sread();
+            int r = getA(row[0][0]);
+            for (int j=1; j<=n; ++j) {
+                int c = getA(col[j-1]);
+                ld val = stod(row[j]);
+
+                d[r][c] = val;
+            }
+        }
+        t = d;
+    }
+
+    void readEmission() {
+        string col = cread();
+        Matrix d(n, vector<ld>(m));
+
+        for (int i=0; i<n; ++i) {
+            vector<string> row = sread();
+            int r = getA(row[0][0]);
+            for (int j=1; j<=m; ++j) {
+                int c = getE(col[j-1]);
+                ld val = stod(row[j]);
+
+                d[r][c] = val;
+            }
+        }
+        g = d;
+    }
+
+    string decodingProblem () {
+        int l = x.size();
+        vector<vector<ld>> dp(l, vector<ld>(n, -oo));
+        vector<vector<bool>> memo(l, vector<bool>(n));
+        string pi;
+
+        function<ld(int, int)> go = [&](int i, int j) {
+            if (i>=l) return ld(1.0);
+            ld& ans = dp[i][j];
+            if (memo[i][j]) return ans;
+
+            for (int k=0; k<n; ++k) ans = max(ans, go(i+1, k)*(t[j][k]*g[j][x[i]]));
+
+            memo[i][j]=1;
+            return ans;
+        };
+
+        ld best = -oo;
+        int s = -1;
+        for(int i=0; i<n; ++i) if (go(0, i)*(1.0/ld(n)) > best) {
+            best = go(0, i)*(1.0/ld(n));
+            s=i;
+        }
+
+        cout << fixed << setprecision(50) << best << endl;
+
+        function<void(int, int)> build = [&](int i, int j) {
+            if (i>=l) return;
+            ld ans = go(i, j);
+
+            pi += a[j];
+            for (int k=0; k<n; ++k) {
+                if (go(i+1, k)*(t[j][k]*g[j][x[i]]) == ans) {
+                    build(i+1, k);
+                    return;
+                }
+            }
+        };
+
+        build(0, s);
+        return pi;
+    }
+    ld outcomeLikelihoodProblem () {
+        int l = x.size();
+        vector<vector<ld>> dp(l, vector<ld>(n, 0.0));
+        vector<vector<bool>> memo(l, vector<bool>(n));
+        string pi;
+
+        function<ld(int, int)> go = [&](int i, int j) {
+            if (i>=l) return ld(1.0);
+            ld& ans = dp[i][j];
+            if (memo[i][j]) return ans;
+
+            for (int k=0; k<n; ++k) ans += go(i+1, k)*t[j][k]*g[j][x[i]];
+
+            memo[i][j]=1;
+            return ans;
+        };
+
+        ld best = 0.0;
+        for(int i=0; i<n; ++i) best += go(0, i)*(1.0/ld(n));
+        return best;
+    }
+};
 
 

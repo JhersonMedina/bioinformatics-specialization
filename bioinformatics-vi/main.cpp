@@ -8,9 +8,20 @@ int main() {
         freopen("input.txt", "r", stdin);
         freopen("output.txt", "w", stdout);
     #endif // LOCAL
-    string s = sread()[0];
-    vector<string> p = sread();
-    int d = iread()[0];
-    for(Match& m : multipleAproximatePatternMatching(s, p, d)) printMatch(m);
+    string x = sread()[0], d;
+    d=sread()[0];
+
+    string e = cread();
+    d=sread()[0];
+
+    string a = cread();
+    d=sread()[0];
+
+    Viterbi v(x, e, a);
+    v.readTransition();
+    d=sread()[0];
+    v.readEmission();
+
+    cout <<v.decodingProblem() << endl;
     return 0;
 }
