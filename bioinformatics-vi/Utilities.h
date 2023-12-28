@@ -6,6 +6,7 @@ using Path = vector<int>;
 using Graph = vector<vector<int>>;
 using Match = pair<string, vector<int>>;
 using Matrix = vector<vector<ld>>;
+
 struct BWT {
     string p;
     int top, bottom, d;
@@ -13,6 +14,7 @@ struct BWT {
 
 const int MAXN = 1e5, INF = 1e9;
 const ld oo = 1e18;
+const string line = "--------";
 
 struct Trie {
     vector<vector<int>> trie = {vector<int>(256, 0)};
@@ -185,6 +187,18 @@ vector<int> iread() {
         j=i;
         while (j<(int)s.size() && (s[j] == '-' || s[j] == '+' || isdigit(s[j]))) j++;
         ans.push_back(stoi(s.substr(i, j-i)));
+        i=j;
+    }
+    return ans;
+}
+vector<ld> fread() {
+    string s; getline(cin, s);
+    vector<ld> ans;
+    for(int i=0, j=0; i<(int)s.size(); ++i) {
+        if (s[i] != '-' && s[i] != '+' && s[i] != '.' && !isdigit(s[i])) continue;
+        j=i;
+        while (j<(int)s.size() && (s[j] == '-' || s[j] == '+' || s[j] == '.' || isdigit(s[j]))) j++;
+        ans.push_back(stod(s.substr(i, j-i)));
         i=j;
     }
     return ans;
@@ -558,8 +572,6 @@ struct Viterbi {
             s=i;
         }
 
-        cout << fixed << setprecision(50) << best << endl;
-
         function<void(int, int)> build = [&](int i, int j) {
             if (i>=l) return;
             ld ans = go(i, j);
@@ -596,6 +608,139 @@ struct Viterbi {
         ld best = 0.0;
         for(int i=0; i<n; ++i) best += go(0, i)*(1.0/ld(n));
         return best;
+    }
+};
+struct HMM {
+    int s, t, c;
+    ld theta;
+
+    string sigma;
+    vector<ld> frac;
+
+    map<int, map<int, ld>> transition;
+    map<int, map<char, ld>> emmit;
+    map<int, int> cnt, total;
+
+    map<int, map<int, int>> edge;
+    map<int, map<char, int>> gen;
+
+    HMM(ld theta, string sigma, vector<string> reads): theta(theta), sigma(sigma) {
+        sort(this->sigma.begin(), this->sigma.end());
+
+        computeFraction(reads);
+        c=seedColumns(),s=-2, t=-4;
+
+        for(string& r : reads) {
+            int u = s, v;
+
+            for(int i=0; i<(int)r.size(); ++i) {
+                if (isRemoved(i)) {
+                    if (r[i] != '-') v = u!=s? 2*((abs(u)+1)/2) : 0; //insertion
+                    else continue; //ignore
+                } else {
+                    if (r[i] == '-') v = u!=s ? -2*((abs(u)+1)/2 + 1) + 1 : -1; //deletion
+                    else v = u!=s ? 2*((abs(u)+1)/2 + 1) - 1 : 1; //match
+                }
+
+                edge[u][v]++;
+                cnt[u]++;
+                if (r[i]!='-') total[v]++, gen[v][r[i]]++;
+                u=v;
+            }
+
+            cnt[u]++;
+            edge[u][t]++;
+            cnt[t]++;
+        }
+
+        computeProbabilities(s); //start
+        computeProbabilities(t); // end
+        computeProbabilities(0); //I0
+        for (int i=1; i<=c; ++i) {
+            computeProbabilities(2*i); //insertion
+            computeProbabilities(2*i-1); //match
+            computeProbabilities(-2*i+1); //deletion
+        }
+
+    }
+    void computeProbabilities(int u) {
+        if (cnt[u]) {
+            transition[u][s] = ld(edge[u][s])/ld(cnt[u]); // start
+            transition[u][t] = ld(edge[u][t])/ld(cnt[u]); // end
+            transition[u][0] = ld(edge[u][0])/ld(cnt[u]); // I0
+
+            for (int i=1; i<=c; ++i) {
+                transition[u][2*i] = ld(edge[u][2*i])/ld(cnt[u]); // insertion
+                transition[u][2*i-1] = ld(edge[u][2*i-1])/ld(cnt[u]); // match
+                transition[u][-2*i+1] = ld(edge[u][-2*i+1])/ld(cnt[u]); // deletion
+            }
+        }
+
+        if (total[u]) for(char& c : sigma) emmit[u][c] = ld(gen[u][c])/ld(total[u]);
+    }
+    void computeFraction(vector<string> reads) {
+        int n = reads.size(), m=reads[0].size();
+        frac.resize(m);
+
+        for (int i=0; i<m; ++i) {
+            for(int j=0; j<n; ++j) frac[i] += reads[j][i] == '-';
+            frac[i] /= ld(n);
+        }
+    }
+    int seedColumns() {
+        int val = 0;
+        for(ld& d : frac) val += d<theta;
+        return val;
+    }
+    bool isRemoved(int i) { return frac[i] >= theta; }
+    string getState(int u) {
+        if (u == -2) return "S";
+        if (u == -4) return "E";
+        if (u<0) return "D" + to_string((abs(u)+1)/2);
+        if (u%2) return "M" + to_string((u+1)/2);
+        return "I" + to_string(u/2);
+    }
+
+    void printTransition(int u) {
+        cout << getState(u) << ' ' << transition[u][s] << ' ' << transition[u][0] << ' ';
+        for (int i=1; i<=c; ++i) {
+            cout << transition[u][2*i-1] << ' ' << transition[u][-2*i+1] << ' ' << transition[u][2*i] << ' ';
+        }
+        cout << transition[u][t] << endl;
+    }
+    void printTransitions() {
+        cout << fixed << setprecision(3);
+        cout << '\t' << getState(s) << '\t' << getState(0) << '\t';
+        for (int i=1; i<=c; ++i) cout << getState(2*i-1) << '\t' << getState(-2*i+1) << '\t' << getState(2*i) << '\t';
+        cout << getState(t) << endl;
+
+        printTransition(s);
+        printTransition(0);
+        for (int i=1; i<=c; ++i) {
+            printTransition(2*i-1);
+            printTransition(-2*i+1);
+            printTransition(2*i);
+        }
+        printTransition(t);
+    }
+    void printEmmit(int u) {
+        cout << getState(u) << ' ';
+        for(char& c : sigma) cout << emmit[u][c] << ' ';
+        cout << endl;
+    }
+    void printEmmits() {
+        cout << fixed << setprecision(3);
+        for (char& c : sigma) cout << '\t' << c;
+        cout << endl;
+
+        printEmmit(s);
+        printEmmit(0);
+        for (int i=1; i<=c; ++i) {
+            printEmmit(2*i-1);
+            printEmmit(-2*i+1);
+            printEmmit(2*i);
+        }
+        printEmmit(t);
     }
 };
 

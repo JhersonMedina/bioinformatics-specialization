@@ -8,20 +8,19 @@ int main() {
         freopen("input.txt", "r", stdin);
         freopen("output.txt", "w", stdout);
     #endif // LOCAL
-    string x = sread()[0], d;
-    d=sread()[0];
+    ld theta = fread()[0];
+    sread();
 
-    string e = cread();
-    d=sread()[0];
+    string sigma = cread();
+    sread();
 
-    string a = cread();
-    d=sread()[0];
+    int n = 11-4;
+    vector<string> reads(n);
+    for(int i=0; i<n; ++i) reads[i] = sread()[0];
 
-    Viterbi v(x, e, a);
-    v.readTransition();
-    d=sread()[0];
-    v.readEmission();
-
-    cout <<v.decodingProblem() << endl;
+    HMM hmm(theta, sigma, reads);
+    hmm.printTransitions();
+    cout << line << endl;
+    hmm.printEmmits();
     return 0;
 }
