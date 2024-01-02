@@ -8,19 +8,17 @@ int main() {
         freopen("input.txt", "r", stdin);
         freopen("output.txt", "w", stdout);
     #endif // LOCAL
-    ld theta = fread()[0];
+    string x = sread()[0];
     sread();
-
     string sigma = cread();
     sread();
+    string sigmaStates = cread();
+    sread();
+    Viterbi viterbi(x, sigma, sigmaStates);
+    viterbi.readTransition();
+    sread();
+    viterbi.readEmission();
 
-    int n = 11-4;
-    vector<string> reads(n);
-    for(int i=0; i<n; ++i) reads[i] = sread()[0];
-
-    HMM hmm(theta, sigma, reads);
-    hmm.printTransitions();
-    cout << line << endl;
-    hmm.printEmmits();
+    viterbi.forwardBackwardAlgorithm();
     return 0;
 }

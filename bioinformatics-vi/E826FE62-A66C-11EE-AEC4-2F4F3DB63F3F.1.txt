@@ -1,0 +1,64 @@
+hmmscan results for job E826FE62-A66C-11EE-AEC4-2F4F3DB63F3F.1
+
+Family-Id Family-Accession Clan Start End Ali-Start Ali-End Model-Start Model-End Bit-Score Ind.-E-value Cond.-E-value Description
+==================================================================================================================================
+
+7TM_GPCR_Sra PF02117.19 CL0192 1 328 1 328 1 328 500.54 1.7e-150 1.7e-154 Serpentine type 7TM GPCR chemoreceptor Sra
+
+---------------------------------------------------------------------------------------------------------------------------------
+
+MODEL  msnlkcAseaeierlsSlnfkiaqfvdliliiltfiltyfAikivlkksifelStkilllqnllyanlhqilyaieaievlyksfflldepCellkteleCalylkvlvagisGmiygqtgllieRllAtfikkykkkksalvgvvisilvlilsiatgkiiiwdDPldevvlaCfifpkksvkRanlflviatvlslfnlvisvlilkyNkkleystrfkvgaRfqkrevieStkticflalsqFialliySvgvlvlrlireiisleqyyllvvwlYtvpfialllPllliyrirstksnRvekikeitsekqtqeehikqlknvW
+MATCH  ms +kcAs+ ei+rl Slnf+i+q++ li +++tfi+ty+Aik+v+kksifelStk+ll+qn+++anlhq+lyaie+i++l+ s+f++++pC +lkte+eC+lyl+v+v g++Gm+ygqtgll+eR++Atfik+y++kks+ +g++is+ vl+ls++t+++iiwdDPld+++l+C++fp++sv+R+++f++i+t+l+lfnlv+s+li+kyNkk+eyst+f+vg+Rf+krevi+St+ticfl+++qFi++l+yS+g++++++ireiis+e+yyl+ vwlYt p+ia+++P+l++yrirs+ +nRv +ik++t++kqt eehi+q+kn+W
+PPL    8899************************************************************************************************************************************************************************************************************************************************************************************************************************************
+SEQ    MSLTKCASKLEIDRLISLNFRINQIIVLIPVFITFIFTYYAIKVVQKKSIFELSTKFLLIQNFFSANLHQVLYAIETIRRLHISLFETNQPCIPLKTEFECRLYLEVFVSGVAGMVYGQTGLLLERACATFIKNYEEKKSVRTGLAISVSVLCLSFITSRLIIWDDPLDGYQLTCISFPSDSVDRSSYFQSICTLLALFNLVTSILIWKYNKKFEYSTPFVVGPRFRKREVIDSTSTICFLTFVQFIFFLVYSLGFFIIKSIREIISYENYYLVAVWLYTPPYIAASFPILIFYRIRSSYANRVLIIKKFTNTKQTIEEHIQQMKNAW
+
+==================================================================================================================================
+
+7TM_GPCR_Srab PF10292.12 CL0192 4 329 18 328 14 323 31.07 1.2e-07 1.3e-11 Serpentine type 7TM GPCR receptor class ab chemoreceptor
+
+---------------------------------------------------------------------------------------------------------------------------------
+
+MODEL  sfLrlsllinlilsiialpvlivalwkikksklfHfNvkiilqihlfglliHclgRiilHslDLynYfva.ldgcdmlpsiyrCfvlRllYnfGlflvsvttvsLviERliAtkrsskYenkskllGillailqlllallllvllysetkfegavmyYCttlkssspesleipelviivsqivariafeyLlrknkklrakskrstLsnrYqleqnlrsiktlkifanlslifvviqilislllllfseslskatylaliElvhalPlYaiiliillvkkekklrkkikkslekelkldeee..Yfeefkkql
+MATCH     r+  +i li  +i + ++ +a+  ++k++ f + +k++l+ + f+  +H +   i     L+  +++ +++c  l +   C     ++++G++ + +  + L++ER+ At+ ++  e+ks+  G+ + +  l+l++++  l+  +    +  +  C+++ s+s++     ++++ +  ++  +    + + nkk+   s       r+   + + s+ t+ +++ +++if+++++l+++++  + e +s ++y+ +  + +  P  a  ++il++ ++++   ++   ++k  ++++    + +++k+++
+PPL    444556667777777777777788999**************************99999988888877777699***********888889************************9988889999*************************99.888889******999999999999999999999999999999****87.888999**********************************************999977766666666666666777777766554444444443333333233778888777
+SEQ    LNFRINQIIVLIPVFITFIFTYYAIKVVQKKSIFELSTKFLLIQNFFSANLHQVLYAIETIRRLHISLFEtNQPCIPLKTEFECRLYLEVFVSGVAGMVYGQTGLLLERACATFIKNYEEKKSVRTGLAISVSVLCLSFITSRLIIWDDPL-DGYQLTCISFPSDSVDRSSYFQSICTLLALFNLVTSILIWKYNKKFEY-STPFVVGPRFRKREVIDSTSTICFLTFVQFIFFLVYSLGFFIIKSIREIISYENYYLVAVWLYTPPYIAASFPILIFYRIRSSYANRVLIIKKFTNTKQTIeeHIQQMKNAW
+
+==================================================================================================================================
+
+
+Search Details
+==============
+Date Started: 2023-12-29 17:08:37
+Cmd: hmmscan --cut_ga  --hmmdb pfam 
+Database: pfam,  version 35.0,  downloaded on 2022-01-12
+Query:  >sp|Q09206|SRA4_CAEEL Serpentine receptor class
+ alpha-4 OS=Caenorhabditis elegans OX=6239
+ GN=sra-4 PE=3 SV=1
+ MSLTKCASKLEIDRLISLNFRINQIIVLIPVFITFIFTYYAIKVVQKK
+ SIFELSTKFLLIQNFFSANLHQVLYAIETIRRLHISLFETNQPCIPLK
+ TEFECRLYLEVFVSGVAGMVYGQTGLLLERACATFIKNYEEKKSVRTG
+ LAISVSVLCLSFITSRLIIWDDPLDGYQLTCISFPSDSVDRSSYFQSI
+ CTLLALFNLVTSILIWKYNKKFEYSTPFVVGPRFRKREVIDSTSTICF
+ LTFVQFIFFLVYSLGFFIIKSIREIISYENYYLVAVWLYTPPYIAASF
+ PILIFYRIRSSYANRVLIIKKFTNTKQTIEEHIQQMKNAWK
+
+Stats
+=====
+nhits:2
+elapsed:0.07
+Z:19632
+Z_setby:0
+n_past_msv:1173
+unpacked:2
+nseqs:1
+user:0
+domZ_setby:0
+n_past_bias:492
+sys:0
+n_past_fwd:3
+nmodels:19632
+nincluded:2
+n_past_vit:36
+nreported:2
+domZ:2
+

@@ -493,13 +493,245 @@ ld outcomehiddenProbability(string x, string pi, Matrix t) {
     for(int i=0; i<(int)x.size(); ++i) ans *= t[pi[i]][x[i]];
     return ans;
 }
+struct HMM {
+    int s, t, c;
+    ld theta, sig;
+
+    string sigma, sigmaStates;
+    vector<int> pi, x;
+    vector<ld> frac;
+
+    map<int, map<int, ld>> transition;
+    map<int, map<char, ld>> emmit;
+    map<int, int> cnt, total;
+
+    map<int, map<int, int>> edge;
+    map<int, map<char, int>> gen;
+
+    HMM(ld theta, ld sig, string sigma, vector<string> reads): theta(theta), sig(sig), sigma(sigma) {
+        sort(this->sigma.begin(), this->sigma.end());
+
+        computeFraction(reads);
+        c=seedColumns(),s=-2, t=-4;
+
+        for(string& r : reads) {
+            int u = s, v;
+
+            for(int i=0; i<(int)r.size(); ++i) {
+                if (isRemoved(i)) {
+                    if (r[i] != '-') v = u!=s? 2*((abs(u)+1)/2) : 0; //insertion
+                    else continue; //ignore
+                } else {
+                    if (r[i] == '-') v = u!=s ? -2*((abs(u)+1)/2 + 1) + 1 : -1; //deletion
+                    else v = u!=s ? 2*((abs(u)+1)/2 + 1) - 1 : 1; //match
+                }
+
+                edge[u][v]++;
+                cnt[u]++;
+                if (r[i]!='-') total[v]++, gen[v][r[i]]++;
+                u=v;
+            }
+
+            cnt[u]++;
+            edge[u][t]++;
+            cnt[t]++;
+        }
+
+        computeProbabilities(s); //start
+        computeProbabilities(t); // end
+        computeProbabilities(0); //I0
+        for (int i=1; i<=c; ++i) {
+            computeProbabilities(2*i); //insertion
+            computeProbabilities(2*i-1); //match
+            computeProbabilities(-2*i+1); //deletion
+        }
+
+    }
+    HMM(string generated, string sigma, string path, string sigmaStates):sigma(sigma), sigmaStates(sigmaStates) {
+        sort(this->sigma.begin(), this->sigma.end());
+        sort(this->sigmaStates.begin(), this->sigmaStates.end());
+
+        for(char& c : generated) x.push_back(getEstimatedGen(c));
+        for(char& c : path) pi.push_back(getEstimatedState(c));
+
+        for (int i=0; i+1<(int)pi.size(); ++i) {
+            cnt[pi[i]]++;
+            edge[pi[i]][pi[i+1]]++;
+        }
+        for (int i=0; i<(int)x.size(); ++i) {
+            total[pi[i]]++;
+            gen[pi[i]][x[i]]++;
+        }
+
+        for (int i=0; i<(int)sigmaStates.size(); ++i) {
+            for (int j=0; j<(int)sigmaStates.size(); ++j) {
+                if (cnt[i]) transition[i][j] = ld(edge[i][j]) / ld(cnt[i]);
+                else transition[i][j] = ld(1) / ld(sigmaStates.size());
+            }
+
+            for (int j=0; j<(int)sigma.size(); ++j) {
+                if (total[i]) emmit[i][j] = ld(gen[i][j]) / ld(total[i]);
+                else emmit[i][j] = ld(1) / ld(sigma.size());
+            }
+        }
+    }
+    int getEstimatedState(char c) { return lower_bound(sigmaStates.begin(), sigmaStates.end(), c) - sigmaStates.begin(); }
+    int getEstimatedGen(char c) { return lower_bound(sigma.begin(), sigma.end(), c) - sigma.begin(); }
+    void computeProbabilities(int u) {
+        if (cnt[u]) {
+            transition[u][s] = ld(edge[u][s])/ld(cnt[u]); // start
+            transition[u][t] = ld(edge[u][t])/ld(cnt[u]); // end
+            transition[u][0] = ld(edge[u][0])/ld(cnt[u]); // I0
+
+            for (int i=1; i<=c; ++i) {
+                transition[u][2*i] = ld(edge[u][2*i])/ld(cnt[u]); // insertion
+                transition[u][2*i-1] = ld(edge[u][2*i-1])/ld(cnt[u]); // match
+                transition[u][-2*i+1] = ld(edge[u][-2*i+1])/ld(cnt[u]); // deletion
+            }
+        }
+
+
+        if (total[u]) for(char& c : sigma) emmit[u][c] = ld(gen[u][c])/ld(total[u]);
+
+        if (sig == 0.0 || u == t) return;
+
+        vector<int> states;
+
+        { //add pseudocounts
+            int v = (abs(u)+1)/2;
+            if (u == s) { //start
+                states = {-1, 0, 1};
+            } else if (u<0 && u!=t) { //deletion
+                if (v == c) states = {2*v, t};
+                else states = {2*v, 2*(v+1)-1, -2*(v+1)+1};
+            } else if (u%2) { //match
+                if (v==c) states = {2*v,t};
+                else states = {2*v, 2*(v+1)-1, -2*(v+1)+1};
+            } else { //insertion
+                if (v==c) states = {u, t};
+                else states = {u, -2*(v+1)+1, 2*(v+1)-1};
+            }
+        }
+
+        ld sum=0;
+        for(int& v : states) {
+            transition[u][v] += sig;
+            sum += transition[u][v];
+        }
+        for(int& v : states) transition[u][v] /= sum;
+
+        if (u>=0) { //insertion or match
+            sum = 0;
+            for(char& c : sigma) {
+                emmit[u][c] += sig;
+                sum += emmit[u][c];
+            }
+            for(char& c : sigma) emmit[u][c] /= sum;
+        }
+    }
+    void computeFraction(vector<string> reads) {
+        int n = reads.size(), m=reads[0].size();
+        frac.resize(m);
+
+        for (int i=0; i<m; ++i) {
+            for(int j=0; j<n; ++j) frac[i] += reads[j][i] == '-';
+            frac[i] /= ld(n);
+        }
+    }
+    int seedColumns() {
+        int val = 0;
+        for(ld& d : frac) val += d<theta;
+        return val;
+    }
+    bool isRemoved(int i) { return frac[i] >= theta; }
+    string getState(int u) {
+        if (u == -2) return "S";
+        if (u == -4) return "E";
+        if (u<0) return "D" + to_string((abs(u)+1)/2);
+        if (u%2) return "M" + to_string((u+1)/2);
+        return "I" + to_string(u/2);
+    }
+
+    void printEstimatedTransition(int u) {
+        cout << sigmaStates[u] << ' ';
+        for (int i=0; i<(int)sigmaStates.size(); ++i) cout << transition[u][i] << ' ';
+        cout << endl;
+    }
+    void printEstimatedTranstions() {
+        cout << fixed << setprecision(5);
+        cout << '\t';
+        for (char& c : sigmaStates) cout << c << '\t';
+        cout << endl;
+        for (int i=0; i<(int)sigmaStates.size(); ++i) {
+            printEstimatedTransition(i);
+        }
+    }
+    void printTransition(int u) {
+        cout << getState(u) << ' ' << transition[u][s] << ' ' << transition[u][0] << ' ';
+        for (int i=1; i<=c; ++i) {
+            cout << transition[u][2*i-1] << ' ' << transition[u][-2*i+1] << ' ' << transition[u][2*i] << ' ';
+        }
+        cout << transition[u][t] << endl;
+    }
+    void printTransitions() {
+        cout << fixed << setprecision(3);
+        cout << '\t' << getState(s) << '\t' << getState(0) << '\t';
+        for (int i=1; i<=c; ++i) cout << getState(2*i-1) << '\t' << getState(-2*i+1) << '\t' << getState(2*i) << '\t';
+        cout << getState(t) << endl;
+
+        printTransition(s);
+        printTransition(0);
+        for (int i=1; i<=c; ++i) {
+            printTransition(2*i-1);
+            printTransition(-2*i+1);
+            printTransition(2*i);
+        }
+        printTransition(t);
+    }
+    void printEmmit(int u) {
+        cout << getState(u) << ' ';
+        for(char& c : sigma) cout << emmit[u][c] << ' ';
+        cout << endl;
+    }
+    void printEstimatedEmmit(int u) {
+        cout << sigmaStates[u] << ' ';
+        for (int i=0; i<(int)sigma.size(); ++i) cout << emmit[u][i] << ' ';
+        cout << endl;
+    }
+    void printEstimatedEmmits() {
+        cout << fixed << setprecision(5);
+        cout << '\t';
+        for (char& c : sigma) cout << c << '\t';
+        cout << endl;
+        for (int i=0; i<(int)sigmaStates.size(); ++i) {
+            printEstimatedEmmit(i);
+        }
+    }
+    void printEmmits() {
+        cout << fixed << setprecision(3);
+        for (char& c : sigma) cout << '\t' << c;
+        cout << endl;
+
+        printEmmit(s);
+        printEmmit(0);
+        for (int i=1; i<=c; ++i) {
+            printEmmit(2*i-1);
+            printEmmit(-2*i+1);
+            printEmmit(2*i);
+        }
+        printEmmit(t);
+    }
+};
 struct Viterbi {
     int n, m;
     vector<int> x;
-    string e,  a;
+    string xs, e,  a;
     Matrix g, t;
 
-    Viterbi(string xs, string e, string a): e(e), a(a) {
+    Viterbi(string xs, string e, string a): xs(xs), e(e), a(a) {
+        sort(this->e.begin(), this->e.end());
+        sort(this->a.begin(), this->a.end());
+
         n = a.size(), m=e.size();
 
         for(char& c : xs) x.push_back(getE(c));
@@ -555,11 +787,11 @@ struct Viterbi {
         string pi;
 
         function<ld(int, int)> go = [&](int i, int j) {
-            if (i>=l) return ld(1.0);
+            if (i>=l) return ld(0.0);
             ld& ans = dp[i][j];
             if (memo[i][j]) return ans;
 
-            for (int k=0; k<n; ++k) ans = max(ans, go(i+1, k)*(t[j][k]*g[j][x[i]]));
+            for (int k=0; k<n; ++k) ans = max(ans, go(i+1, k)+log2(t[j][k]*g[j][x[i]]));
 
             memo[i][j]=1;
             return ans;
@@ -567,8 +799,8 @@ struct Viterbi {
 
         ld best = -oo;
         int s = -1;
-        for(int i=0; i<n; ++i) if (go(0, i)*(1.0/ld(n)) > best) {
-            best = go(0, i)*(1.0/ld(n));
+        for(int i=0; i<n; ++i) if (go(0, i)+log2(1.0/ld(n)) > best) {
+            best = go(0, i)+log2(1.0/ld(n));
             s=i;
         }
 
@@ -578,7 +810,7 @@ struct Viterbi {
 
             pi += a[j];
             for (int k=0; k<n; ++k) {
-                if (go(i+1, k)*(t[j][k]*g[j][x[i]]) == ans) {
+                if (go(i+1, k)+log2(t[j][k]*g[j][x[i]]) == ans) {
                     build(i+1, k);
                     return;
                 }
@@ -609,138 +841,83 @@ struct Viterbi {
         for(int i=0; i<n; ++i) best += go(0, i)*(1.0/ld(n));
         return best;
     }
-};
-struct HMM {
-    int s, t, c;
-    ld theta;
+    void forwardBackwardAlgorithm () {
+        int l = x.size();
+        vector<vector<ld>> dp(l, vector<ld>(n, 0.0));
+        vector<vector<bool>> memo(l, vector<bool>(n));
+        string pi;
 
-    string sigma;
-    vector<ld> frac;
+        function<ld(int, int)> go = [&](int i, int j) {
+            if (i>=l) return ld(1.0);
+            ld& ans = dp[i][j];
+            if (memo[i][j]) return ans;
 
-    map<int, map<int, ld>> transition;
-    map<int, map<char, ld>> emmit;
-    map<int, int> cnt, total;
+            for (int k=0; k<n; ++k) ans += go(i+1, k)*t[j][k]*g[j][x[i]];
 
-    map<int, map<int, int>> edge;
-    map<int, map<char, int>> gen;
+            memo[i][j]=1;
+            return ans;
+        };
 
-    HMM(ld theta, string sigma, vector<string> reads): theta(theta), sigma(sigma) {
-        sort(this->sigma.begin(), this->sigma.end());
+        vector<vector<ld>> dp2(l, vector<ld>(n, 0.0));
+        vector<vector<bool>> memo2(l, vector<bool>(n));
 
-        computeFraction(reads);
-        c=seedColumns(),s=-2, t=-4;
+        function<ld(int, int)> go2 = [&](int i, int j) {
+            if (i<0) return ld(1.0);
+            ld& ans = dp2[i][j];
+            if (memo2[i][j]) return ans;
 
-        for(string& r : reads) {
-            int u = s, v;
+            for (int k=0; k<n; ++k) ans += go2(i-1, k)*t[j][k]*g[j][x[i]];
 
-            for(int i=0; i<(int)r.size(); ++i) {
-                if (isRemoved(i)) {
-                    if (r[i] != '-') v = u!=s? 2*((abs(u)+1)/2) : 0; //insertion
-                    else continue; //ignore
-                } else {
-                    if (r[i] == '-') v = u!=s ? -2*((abs(u)+1)/2 + 1) + 1 : -1; //deletion
-                    else v = u!=s ? 2*((abs(u)+1)/2 + 1) - 1 : 1; //match
-                }
+            memo2[i][j]=1;
+            return ans;
+        };
 
-                edge[u][v]++;
-                cnt[u]++;
-                if (r[i]!='-') total[v]++, gen[v][r[i]]++;
-                u=v;
+        ld best = 0.0;
+        for(int i=0; i<n; ++i) best += go(0, i)*(1.0/ld(n));
+
+        cout << fixed << setprecision(5);
+        for(int i=0; i<n; ++i) cout << a[i] << ' '; cout << endl;
+        for (int i=0; i<(int)x.size(); ++i) {
+            for (int j=0; j<n; ++j) cout << go(i, j)*go2(i, j) / best << ' ';
+            cout << endl;
+        }
+    }
+    void printTransition() {
+        cout << fixed << setprecision(3);
+        for (char& c : a) cout << '\t' << c; cout << endl;
+        for(int i=0; i<n; ++i) {
+            cout << a[i] << ' ';
+            for(int j=0; j<n; ++j) cout << t[i][j] << ' ';
+            cout << endl;
+        }
+    }
+    void printEmmision() {
+        cout << fixed << setprecision(3);
+        for (char& c : e) cout << '\t' << c; cout << endl;
+        for(int i=0; i<n; ++i) {
+            cout << a[i] << ' ';
+            for(int j=0; j<m; ++j) cout << g[i][j] << ' ';
+            cout << endl;
+        }
+    }
+    void learning(int iterations) {
+        while (iterations--) {
+            HMM hmm(xs, e, decodingProblem(), a);
+
+            t = Matrix(n, vector<ld>(n)), g = Matrix(n, vector<ld>(m));
+
+            for (int i=0; i<n; ++i) {
+                for (int j=0; j<n; ++j) t[i][j] = hmm.transition[i][j];
             }
 
-            cnt[u]++;
-            edge[u][t]++;
-            cnt[t]++;
-        }
-
-        computeProbabilities(s); //start
-        computeProbabilities(t); // end
-        computeProbabilities(0); //I0
-        for (int i=1; i<=c; ++i) {
-            computeProbabilities(2*i); //insertion
-            computeProbabilities(2*i-1); //match
-            computeProbabilities(-2*i+1); //deletion
-        }
-
-    }
-    void computeProbabilities(int u) {
-        if (cnt[u]) {
-            transition[u][s] = ld(edge[u][s])/ld(cnt[u]); // start
-            transition[u][t] = ld(edge[u][t])/ld(cnt[u]); // end
-            transition[u][0] = ld(edge[u][0])/ld(cnt[u]); // I0
-
-            for (int i=1; i<=c; ++i) {
-                transition[u][2*i] = ld(edge[u][2*i])/ld(cnt[u]); // insertion
-                transition[u][2*i-1] = ld(edge[u][2*i-1])/ld(cnt[u]); // match
-                transition[u][-2*i+1] = ld(edge[u][-2*i+1])/ld(cnt[u]); // deletion
+            for (int i=0; i<n; ++i) {
+                for (int j=0; j<m; ++j) g[i][j] = hmm.emmit[i][j];
             }
         }
 
-        if (total[u]) for(char& c : sigma) emmit[u][c] = ld(gen[u][c])/ld(total[u]);
-    }
-    void computeFraction(vector<string> reads) {
-        int n = reads.size(), m=reads[0].size();
-        frac.resize(m);
-
-        for (int i=0; i<m; ++i) {
-            for(int j=0; j<n; ++j) frac[i] += reads[j][i] == '-';
-            frac[i] /= ld(n);
-        }
-    }
-    int seedColumns() {
-        int val = 0;
-        for(ld& d : frac) val += d<theta;
-        return val;
-    }
-    bool isRemoved(int i) { return frac[i] >= theta; }
-    string getState(int u) {
-        if (u == -2) return "S";
-        if (u == -4) return "E";
-        if (u<0) return "D" + to_string((abs(u)+1)/2);
-        if (u%2) return "M" + to_string((u+1)/2);
-        return "I" + to_string(u/2);
-    }
-
-    void printTransition(int u) {
-        cout << getState(u) << ' ' << transition[u][s] << ' ' << transition[u][0] << ' ';
-        for (int i=1; i<=c; ++i) {
-            cout << transition[u][2*i-1] << ' ' << transition[u][-2*i+1] << ' ' << transition[u][2*i] << ' ';
-        }
-        cout << transition[u][t] << endl;
-    }
-    void printTransitions() {
-        cout << fixed << setprecision(3);
-        cout << '\t' << getState(s) << '\t' << getState(0) << '\t';
-        for (int i=1; i<=c; ++i) cout << getState(2*i-1) << '\t' << getState(-2*i+1) << '\t' << getState(2*i) << '\t';
-        cout << getState(t) << endl;
-
-        printTransition(s);
-        printTransition(0);
-        for (int i=1; i<=c; ++i) {
-            printTransition(2*i-1);
-            printTransition(-2*i+1);
-            printTransition(2*i);
-        }
-        printTransition(t);
-    }
-    void printEmmit(int u) {
-        cout << getState(u) << ' ';
-        for(char& c : sigma) cout << emmit[u][c] << ' ';
-        cout << endl;
-    }
-    void printEmmits() {
-        cout << fixed << setprecision(3);
-        for (char& c : sigma) cout << '\t' << c;
-        cout << endl;
-
-        printEmmit(s);
-        printEmmit(0);
-        for (int i=1; i<=c; ++i) {
-            printEmmit(2*i-1);
-            printEmmit(-2*i+1);
-            printEmmit(2*i);
-        }
-        printEmmit(t);
+        printTransition();
+        cout << line << endl;
+        printEmmision();
     }
 };
 
